@@ -1,0 +1,5 @@
+{
+  "name": "claude-tmux-status",
+  "version": "1.0.0",
+  "description": "Tmux status bar integration for Claude Code"
+}
