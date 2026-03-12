@@ -8,6 +8,12 @@ This skill documents the hook-based signaling model used by the `tmux` plugin. C
 
 ---
 
+## What the Hooks Do NOT Do
+
+**These hooks set tmux window options only.** They produce no visible output by themselves. To surface Claude's status visually, you must read `#{@tab_claude_needs_input}` and/or `#{@tab_claude_blink}` in your own `window-status-format` or status bar configuration. The "Adapting to Your Setup" section at the bottom shows a minimal example.
+
+---
+
 ## Environment Prerequisites
 
 All hook scripts depend on `$TMUX_PANE` being set. This environment variable is automatically present when Claude Code runs inside a tmux pane. Without it, every script is a no-op.
@@ -152,4 +158,4 @@ The `tmux set-window-option` calls are fully generic and work with any status ba
 set -g window-status-format "#{?#{@tab_claude_needs_input}, ⚠ ,} #W"
 ```
 
-This adds a warning indicator to any window where Claude is waiting for input, with no custom scripts required beyond the hook scripts themselves.
+This adds a warning indicator to any window where Claude is waiting for input, with no custom scripts required beyond the hook scripts themselves. This is the required step to make the hooks visible; without it, the hooks run silently.
