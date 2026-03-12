@@ -11,8 +11,8 @@ Practical patterns for building and editing tmux powerline format strings. See a
 
 ## Value + Label Pattern
 
-Every status-right segment uses two background colors: a bright `SEGMENT_BG` for the
-value/number, and a darker `SEGMENT_DK` for the text label. Always define and use them
+Every status-right segment uses two background colors: a bright `SEGMENT_VAL` for the
+value/number, and a darker `SEGMENT_LBL` for the text label. Always define and use them
 as a pair — the sub-separator glyph (U+E0BA) transitions between them.
 
 ```sh
