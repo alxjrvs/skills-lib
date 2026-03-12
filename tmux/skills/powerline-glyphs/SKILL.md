@@ -69,32 +69,31 @@ Use between two segments to create a thin diagonal "V" of terminal background.
 
 ---
 
-## Worked Example: CPU Segment
+## Worked Example: Single Segment
 
-From `status-right` in `tmux-powerline.sh`. Variables: `CPU_VAL` = bright CPU color,
-`CPU_LBL` = darker CPU label color, `TERM_BG` = terminal background (`#282c34`).
+Variables: `SEG_VAL` = bright segment color, `SEG_LBL` = darker label color, `TERM_BG` = terminal background.
 
 ```sh
-# 1. Entry: terminal BG → CPU_VAL via SL
+# 1. Entry: terminal BG → SEG_VAL via SL
 #    FG=TERM_BG (left side blends with bar background)
-#    BG=CPU_VAL  (right side enters segment)
-o="#[bg=${CPU_VAL},fg=${TERM_BG}]${SL}"
+#    BG=SEG_VAL  (right side enters segment)
+o="#[bg=${SEG_VAL},fg=${TERM_BG}]${SL}"
 
-# 2. Value text: CPU percentage on bright background
-o="${o}#[bg=${CPU_VAL},fg=#f0f0f0] ${cpu_display} "
+# 2. Value text: content on bright background
+o="${o}#[bg=${SEG_VAL},fg=#f0f0f0] ${value} "
 
-# 3. Sub-split: CPU_VAL → CPU_LBL via BS
-#    BG=CPU_VAL (left side continues bright area)
-#    FG=CPU_LBL (right side bleeds into label color)
-o="${o}#[bg=${CPU_VAL},fg=${CPU_LBL}]${BS}"
+# 3. Sub-split: SEG_VAL → SEG_LBL via BS
+#    BG=SEG_VAL (left side continues bright area)
+#    FG=SEG_LBL (right side bleeds into label color)
+o="${o}#[bg=${SEG_VAL},fg=${SEG_LBL}]${BS}"
 
-# 4. Label text: "CPU" on darker background
-o="${o}#[bg=${CPU_LBL},fg=#f0f0f0,nobold] CPU "
+# 4. Label text: "LABEL" on darker background
+o="${o}#[bg=${SEG_LBL},fg=#f0f0f0,nobold] LABEL "
 
-# 5. Exit: CPU_LBL → TERM_BG via BS (before next segment's SL entry)
-#    BG=CPU_LBL (left side finishes segment)
+# 5. Exit: SEG_LBL → TERM_BG via BS (before next segment's SL entry)
+#    BG=SEG_LBL (left side finishes segment)
 #    FG=TERM_BG (right side returns to terminal BG)
-o="${o}#[bg=${CPU_LBL},fg=${TERM_BG}]${BS}"
+o="${o}#[bg=${SEG_LBL},fg=${TERM_BG}]${BS}"
 ```
 
 The next segment then starts with its own SL entry from TERM_BG, completing the valley.
