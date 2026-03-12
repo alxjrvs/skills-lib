@@ -6,5 +6,11 @@
   "metadata": {
     "description": "alxjrvs personal Claude Code plugin marketplace"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "claude-tmux-status",
+      "source": "./claude-tmux-status",
+      "description": "Tmux status bar integration for Claude Code"
+    }
+  ]
 }
