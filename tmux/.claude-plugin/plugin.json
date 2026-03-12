@@ -1,0 +1,5 @@
+{
+  "name": "tmux",
+  "version": "1.0.0",
+  "description": "Tmux integration for Claude Code — tab status, blinking, and hooks"
+}
