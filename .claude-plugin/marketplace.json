@@ -8,9 +8,9 @@
   },
   "plugins": [
     {
-      "name": "claude-tmux-status",
-      "source": "./claude-tmux-status",
-      "description": "Tmux status bar integration for Claude Code"
+      "name": "claude-tmux",
+      "source": "./claude-tmux",
+      "description": "Tmux integration for Claude Code — tab status, blinking, and hooks"
     }
   ]
 }
