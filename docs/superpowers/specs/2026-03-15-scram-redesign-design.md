@@ -26,6 +26,8 @@ scram/
 └── scripts/
 ```
 
+The `scripts/` directory is reserved for future use (e.g., worktree cleanup helpers). Omit if not needed.
+
 Marketplace entry:
 ```json
 {
@@ -37,9 +39,13 @@ Marketplace entry:
 
 The skill remains invocable as `/scram`. Agent filenames stay the same.
 
+### Migration
+
+This is a breaking rename. Update `marketplace.json` to replace the `dev-team` entry with `scram`. Delete the old `dev-team/` directory. Users who installed `dev-team` must reinstall as `scram`.
+
 ## 2. Integration Branch Strategy
 
-Before any agent work, the orchestrator creates an integration branch:
+Before any agent work, the merge masters create an integration branch during G0:
 
 ```
 scram/<feature-name>
@@ -64,29 +70,31 @@ scram/<feature-name>
 ### Recovery on Conflict
 
 - Merge master resolves trivial conflicts (import ordering, adjacent edits) in the integration branch
-- Substantive conflicts (competing logic): merge master pauses, orchestrator re-sequences, conflicting story redispatched against updated integration branch
+- Substantive conflicts (competing logic): merge master pauses the conflicting story. All non-conflicting work merges first. Orchestrator then redispatches the conflicting story against the updated integration branch with a fresh context brief reflecting merged changes.
 - If a merge breaks tests: merge master reverts, story goes back to dev with failure details
 
 ## 3. Stream-Based Flow
 
 Replace the 8-phase sequential model with **4 gates + 3 concurrent streams**.
 
+**The orchestrator** is the top-level Claude Code conversation running the `/scram` skill. It is not a subagent. It coordinates gates, dispatches agents, and manages the backlog.
+
 ### Gates (sequential checkpoints)
 
 | Gate | What Happens | Who |
 |------|-------------|-----|
 | **G0: Environment** | `bun install`, `fix:all`, `build`, `test`, clean git status. Create integration branch. | Merge masters |
-| **G1: Doc-as-Spec** | Gather requirements, break down features, doc specialists write docs + ADRs in worktrees. Senior devs + merge masters review. Ask about external tracker. Merge approved docs into integration branch. | All |
+| **G1: Doc-as-Spec** | Gather requirements, break down features, doc specialists write docs + ADRs in worktrees. Senior devs + merge masters review. Merge approved docs into integration branch. Orchestrator asks about external tracker (see Section 4). | All |
 | **G2: Story Breakdown** | Derive stories from approved docs. Size small (Section 5). Tag complexity (simple/moderate/complex). Prioritize P0-P3. If tracker provided, create/link issues. Present backlog for user approval. | Orchestrator + senior devs |
 | **G3: Final Review** | After all streams complete: orchestrator reviews every commit, consistency, regressions, doc accuracy. Integration branch merged/PR'd to main. Close remaining tracker issues. | Orchestrator |
 
 ### Streams (concurrent, run after G2)
 
-**Dev Stream** — Dev agents pull stories from the backlog, implement with TDD in worktrees branched from the integration branch. Each agent works one story at a time. When done, they report back and their worktree is ready for review.
+**Dev Stream** — Dev agents pull stories from the backlog, implement with TDD in worktrees branched from the integration branch. Each agent works one story at a time. Dev agents are dispatched via the `Agent` tool with `isolation: "worktree"`. When complete, the agent returns its result to the orchestrator, which then triggers merge stream review.
 
-**Merge Stream** — Merge masters run continuously. As each dev completes, they review the diff, verify tests, merge into the integration branch (one atomic commit per story), run full test suite, and update the tracker if configured. If a merge breaks something, they revert and redispatch. Both merge masters must independently approve.
+**Merge Stream** — Merge masters run continuously. As each dev completes, they review the diff, verify tests, merge into the integration branch (one atomic commit per story), run full test suite, and update the tracker if configured. If a merge breaks something, they revert and redispatch. For **simple** stories, a single merge master may approve. For **moderate** and **complex** stories, both merge masters must independently approve. This prevents dual-approval from bottlenecking throughput on straightforward work.
 
-**Doc Refinement Stream** — Doc specialists begin refinement as soon as the first stories merge (not after ALL dev work). They reconcile docs with actual implementation incrementally, amend ADRs if architectural decisions changed. Completes after the last story merges and all docs are reconciled.
+**Doc Refinement Stream** — The orchestrator dispatches a doc specialist after each batch of merges (every 2-3 stories, or after significant architectural stories merge). The doc specialist receives a list of merged stories and their commit hashes. They reconcile docs with actual implementation, amend ADRs if architectural decisions changed. Stream completes after the last story merges and all docs are reconciled.
 
 All three streams overlap. A dev implements story 4 while merge masters review story 2 while doc specialists refine docs based on merged story 1.
 
@@ -154,8 +162,8 @@ Orchestrator and senior devs review each story against sizing criteria at G2. **
 
 Models are assigned per-agent at dispatch time based on story/task complexity.
 
-| Role | Default | Can Scale To | Notes |
-|------|---------|-------------|-------|
+| Role | Default | Flex To | Notes |
+|------|---------|---------|-------|
 | **Developer** | haiku | sonnet, opus | Promote based on story complexity tag |
 | **Senior Developer** | opus | sonnet | Sonnet for straightforward review or well-patterned stories |
 | **Merge Master** | opus | (fixed) | Non-negotiable — high-stakes decisions |
@@ -187,12 +195,16 @@ Failed stories escalate: haiku → sonnet → opus → user.
 ### Merge Conflicts
 
 - **Trivial** (import ordering, adjacent edits): merge master resolves in integration branch
-- **Substantive** (competing logic): merge master pauses, orchestrator re-sequences, story redispatched against updated integration branch
+- **Substantive** (competing logic): merge master pauses the story. Non-conflicting work merges first. Orchestrator redispatches against updated integration branch with fresh context brief.
 
 ### Doc-Code Divergence
 
 1. Doc specialist flags significant deviation to orchestrator
 2. Orchestrator decides: update doc to match reality, or file follow-up story
+
+### Orchestrator Context Limits
+
+If the orchestrator approaches context limits while managing a large feature, it checkpoints state (current backlog, stream status, integration branch name, merged/pending stories) and presents it to the user for continuation in a fresh session.
 
 ### Tracker Unavailable
 
@@ -201,9 +213,12 @@ Failed stories escalate: haiku → sonnet → opus → user.
 
 ## 8. Agent Updates
 
+All agents that perform code changes (developer, senior-developer, doc-specialist) are dispatched with `isolation: "worktree"`. Merge masters operate directly on the integration branch without worktree isolation.
+
 ### developer.md (default: haiku)
 
-- Model default haiku, scalable to sonnet/opus
+- Model default haiku, scalable to sonnet/opus based on story complexity
+- Dispatched with `isolation: "worktree"`
 - Receives context brief with each story
 - Branches from integration branch
 - If context tight, report progress rather than pushing through
@@ -212,6 +227,7 @@ Failed stories escalate: haiku → sonnet → opus → user.
 ### senior-developer.md (default: opus)
 
 - Model default opus, scalable to sonnet
+- Dispatched with `isolation: "worktree"` when implementing
 - Participates in G2 story breakdown and sizing
 - Branches from integration branch
 - Escalation target for failed stories
@@ -219,8 +235,10 @@ Failed stories escalate: haiku → sonnet → opus → user.
 
 ### merge-master.md (opus, fixed)
 
+- No worktree isolation — operates on integration branch directly
 - Creates and maintains integration branch
 - Runs full test suite after every merge
+- Single approval for simple stories, dual approval for moderate/complex
 - Tracker update responsibilities (if configured)
 - Revert-and-redispatch on test failure
 - Conflict resolution (trivial vs. substantive)
@@ -229,7 +247,8 @@ Failed stories escalate: haiku → sonnet → opus → user.
 ### doc-specialist.md (sonnet, fixed)
 
 - Model changes from opus to sonnet
-- Begins refinement incrementally as stories merge
+- Dispatched with `isolation: "worktree"`
+- Begins refinement incrementally as stories merge (dispatched per batch)
 - Flags significant doc-code divergence to orchestrator
 
 ## 9. Team & Naming Convention
@@ -237,7 +256,7 @@ Failed stories escalate: haiku → sonnet → opus → user.
 Jack Kirby New Gods characters (unchanged):
 
 - **Senior Devs:** Orion, Barda, Scott, Lightray, Bekka
-- **Devs:** Forager, Bug, Serifan, Vykin
+- **Devs:** Forager, Bug, Serifan, Vykin, Fastbak
 - **Merge Masters:** Metron, Highfather
 - **Doc Specialists:** Beautiful Dreamer, Mark Moonrider, Jezebelle
 
