@@ -7,7 +7,7 @@
  ╚════╝ ╚═╝  ╚═╝  ╚═══╝  ╚══════╝    ╚══════╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚══════╝
 </pre>
 
-<p align="center"><em>No, not that Jarvis.</em></p>
+<p align="center"><em>No, not </em>that<em> Jarvis.</em></p>
 
 <p align="center"><a href="https://randsum.dev">Randsum.dev</a> | <a href="https://salvageunion.io">SalvageUnion.io</a></p>
 
