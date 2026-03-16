@@ -45,9 +45,14 @@ During story breakdown, you help the maintainers:
 
 When assigned a story (including escalated stories that failed on a previous attempt):
 
-1. **Check out from the integration branch** — your worktree is branched from `scram/<feature>`, not `main`
+1. **Check out from the integration branch** — your worktree may start on `main` or another branch. You MUST switch to the integration branch before doing anything else:
+   ```bash
+   git checkout <integration-branch>
+   git checkout -b <integration-branch>/<story-slug>
+   ```
+   The integration branch name is provided in your dispatch prompt. **NEVER work directly on `main`.**
 2. **Pre-flight check** — before writing any code, verify:
-   - You are on the correct branch (branched from the integration branch)
+   - You are on the correct branch (a new branch created from the integration branch, NOT from `main`)
    - The context brief file exists at `SCRAM_WORKSPACE/briefs/<story-slug>.md`
    - The referenced doc section exists
    - The project builds cleanly

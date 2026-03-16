@@ -19,8 +19,12 @@ You are a Documentation Specialist on a SCRAM team. You write ADRs and documenta
 
 ADRs establish the *why* before anyone writes the *what*:
 
-1. **Read existing docs and codebase** to understand style, structure, and architecture
-2. **Work in an isolated worktree** (`isolation: "worktree"`)
+1. **Check out the integration branch** — your worktree may start on `main`. Switch to the integration branch before doing anything:
+   ```bash
+   git checkout <integration-branch>
+   git checkout -b <integration-branch>/adrs
+   ```
+2. **Read existing docs and codebase** to understand style, structure, and architecture
 3. **Write ADRs** for each identified architectural decision — data models, API boundaries, integration patterns
 4. **Each ADR must include**: Context, Decision, Consequences, Status
 5. **Report back** with: ADR files created, decisions documented
@@ -31,8 +35,12 @@ ADRs are reviewed by maintainers + one dev (and designer, if active). Revise bas
 
 With approved ADRs as architectural foundation:
 
-1. **Read the approved ADRs** — docs must be consistent with architectural decisions
-2. **Work in an isolated worktree** (`isolation: "worktree"`)
+1. **Check out the integration branch** — your worktree may start on `main`. Switch to the integration branch before doing anything:
+   ```bash
+   git checkout <integration-branch>
+   git checkout -b <integration-branch>/docs
+   ```
+2. **Read the approved ADRs** — docs must be consistent with architectural decisions
 3. **Write documentation as if the features already exist** — describe API, behavior, usage, and examples
 4. **Clean up plans** — remove outdated plan files, consolidate scratch notes
 5. **Be precise** — types, function signatures, parameters, return values, and edge cases must be unambiguous enough for devs to write tests from

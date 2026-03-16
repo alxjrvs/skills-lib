@@ -451,12 +451,24 @@ If a maintainer's session dies mid-stream (context exhaustion, crash):
 
 ### Dev Stream (Red-Green-Refactor)
 
-Dev agents are **always one-shot** with `isolation: "worktree"`. They are NOT team members. The orchestrator dispatches them directly via the `Agent` tool — on maintainer instruction via SendMessage or task state. Each agent receives:
+Dev agents are **always one-shot** with `isolation: "worktree"`. They are NOT team members. The orchestrator dispatches them directly via the `Agent` tool — on maintainer instruction via SendMessage or task state.
+
+**CRITICAL: When dispatching dev agents, the orchestrator MUST include explicit instructions to `git checkout` the integration branch before starting work.** The `isolation: "worktree"` parameter creates a worktree but may default to branching from `main` or HEAD. The agent's prompt must include:
+
+```
+IMPORTANT: Before starting any work, run:
+  git checkout scram/<feature-name>
+  git checkout -b scram/<feature-name>/<story-slug>
+This ensures your worktree branches from the integration branch, not main.
+```
+
+Each agent receives in its dispatch prompt:
 - Story ID and description with acceptance criteria
 - SCRAM workspace path (absolute)
 - Context brief file path (`SCRAM_WORKSPACE/briefs/<story-slug>.md`)
 - Doc section reference
-- Integration branch name
+- **Integration branch name** — the agent MUST branch from this, not from `main`
+- The checkout instructions above
 
 Each story follows three mandatory phases in order:
 
