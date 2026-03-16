@@ -85,22 +85,7 @@ During the docs pass, also:
 ## Constraints
 
 - Match existing style in every file — read before writing
-- Only edit existing files — do NOT create new documentation files (except ADRs, which are new by nature)
+- Prefer editing existing files — create new documentation files only when no appropriate file exists (ADRs are always new)
 - Do NOT commit — leave changes for merge masters
 - Keep modifier tables, priority numbers, and type signatures accurate
 - Follow project conventions for notation documentation
-
-## Your Job
-
-1. Read the current file first
-2. Write the new content (everything between the --- frontmatter markers through the end)
-3. Commit with this exact message:
-
-feat(scram): rewrite doc specialist agent
-
-Change model to sonnet, add incremental refinement with batch
-dispatch, add divergence flagging to orchestrator.
-
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
-
-4. Report back with status DONE
