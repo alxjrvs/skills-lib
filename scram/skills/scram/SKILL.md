@@ -577,6 +577,8 @@ process | tooling | communication | prompt_quality | missing_capability
 
 Tickets must focus on **improving the SCRAM skill and agent prompts** — not the feature code. Each ticket should be specific enough to act on.
 
+**CRITICAL: No business-specific information.** Tickets must describe process improvements in generic terms. Do not reference the feature name, project name, file paths, code changes, business logic, or any details that would reveal what was being built. Describe only how the SCRAM workflow, agent prompts, or skill definitions can be improved. Example: "context briefs lacked dependency info" not "the auth module brief didn't mention the session store." This constraint applies to all retro artifacts — tickets, votes, discussions, and the final compiled output.
+
 After all agents have submitted, the orchestrator collects all tickets into the workspace.
 
 ### Phase 2: Voting
@@ -684,9 +686,9 @@ After presenting the retrospective, ask the user:
 > "Would you like me to open an issue on `alxjrvs/skills` with these retrospective results? This helps track improvements to the SCRAM plugin over time."
 
 If yes, create a GitHub issue on `alxjrvs/skills` with:
-- **Title:** `retro: <feature-name> — <count> consensus changes`
+- **Title:** `retro: <count> consensus changes from SCRAM run`
 - **Labels:** `retrospective`
-- **Body:** The full compiled retrospective output (consensus changes, partial consensus, other tickets), plus a link to the project and integration branch for context.
+- **Body:** The compiled retrospective output (consensus changes, partial consensus, other tickets) — **scrubbed of all business-specific information**. No feature names, project names, file paths, code snippets, or business logic. Only generic process improvements to SCRAM skill and agent definitions. This issue is public — treat it as such.
 
 After presenting the retrospective, update session manifest to `complete` and remove the `scram-session-*` memory reference.
 
