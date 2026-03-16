@@ -15,7 +15,7 @@ SCRAM uses **5 sequential gates** (plus an optional retrospective) and **3 concu
 | Role | Count | Default Model | Flex To | Agent | Responsibility |
 |------|-------|---------------|---------|-------|----------------|
 | Senior Developer | 1-5 | sonnet | opus | `senior-developer` | Doc review, story breakdown, context briefs, complex TDD implementation, escalation target |
-| Developer | 1-5 | haiku | sonnet, opus | `developer` | TDD implementation in isolated worktrees |
+| Developer | 1-5 | sonnet | opus | `developer` | TDD implementation in isolated worktrees |
 | Merge Maintainer | 2 | sonnet | (fixed) | `merge-maintainer` | Integration branch, doc/code review, merging, stream coordination |
 | Doc Specialist | 1-3 | sonnet | (fixed) | `doc-specialist` | Docs-as-spec, incremental refinement |
 | Designer | 0-1 | sonnet | opus | `designer` | Design ADRs, required UI/UX merge approver (optional role) |
@@ -112,8 +112,8 @@ Example:
 |------|------|-------|-------|
 | Orion | Senior Dev | senior-developer | sonnet |
 | Barda | Senior Dev | senior-developer | sonnet |
-| Forager | Dev | developer | haiku |
-| Bug | Dev | developer | haiku |
+| Forager | Dev | developer | sonnet |
+| Bug | Dev | developer | sonnet |
 | Metron | Merge Maintainer | merge-maintainer | sonnet |
 | Highfather | Merge Maintainer | merge-maintainer | sonnet |
 | Beautiful Dreamer | Doc Specialist | doc-specialist | sonnet |
@@ -253,8 +253,8 @@ Present the team to the user before proceeding:
 Team:
   Orion (Senior Dev, sonnet)
   Barda (Senior Dev, sonnet)
-  Forager (Dev, haiku)
-  Bug (Dev, haiku)
+  Forager (Dev, sonnet)
+  Bug (Dev, sonnet)
   Metron (Merge Maintainer, sonnet)
   Highfather (Merge Maintainer, sonnet)
   Beautiful Dreamer (Doc Specialist, sonnet)
@@ -329,7 +329,7 @@ Each story gets a complexity tag that determines the agent model:
 
 | Complexity | Model | When |
 |-----------|-------|------|
-| Simple | haiku | Clear pattern, few files, context brief covers everything |
+| Simple | sonnet | Clear pattern, few files, context brief covers everything |
 | Moderate | sonnet | Some judgment needed, moderate file scope |
 | Complex | opus (senior dev) | Cross-cutting, architectural judgment, ambiguous requirements |
 
@@ -468,18 +468,19 @@ Default escalation path for capability failures: haiku → sonnet → opus. If t
 
 Merge maintainers run continuously. As each dev agent completes:
 
-1. Parse the agent's **structured Story Report**
-2. Review the worktree diff against the integration branch
-3. Verify implementation matches docs and ADRs
-4. Verify Red-Green-Refactor was followed: tests exist, tests pass, code is clean
-5. **Simple stories**: single merge maintainer approval
-6. **Moderate/complex stories**: both merge maintainers approve independently
-7. **UI/UX stories** (when designer is active): designer approval required **in addition to** merge maintainer approval(s)
-8. Merge into integration branch (one atomic commit per story)
-9. Run full test suite after merge
-10. Update `SCRAM_WORKSPACE/backlog.md` — set status to `merged`, record commit hash
-11. Update `SCRAM_WORKSPACE/session.md` — move story to Merged Stories, update timestamp
-12. Update tracker if configured
+1. **Verify worktree metadata** — confirm the agent response includes `worktreePath` and `worktreeBranch`. If either is missing, the agent likely did not commit and the work is lost — flag immediately and redispatch before proceeding.
+2. Parse the agent's **structured Story Report**
+3. Review the worktree diff against the integration branch
+4. Verify implementation matches docs and ADRs
+5. Verify Red-Green-Refactor was followed: tests exist, tests pass, code is clean
+6. **Simple stories**: single merge maintainer approval
+7. **Moderate/complex stories**: both merge maintainers approve independently
+8. **UI/UX stories** (when designer is active): designer approval required **in addition to** merge maintainer approval(s)
+9. Merge into integration branch (one atomic commit per story)
+10. Run full test suite after merge
+11. Update `SCRAM_WORKSPACE/backlog.md` — set status to `merged`, record commit hash
+12. Update `SCRAM_WORKSPACE/session.md` — move story to Merged Stories, update timestamp
+13. Update tracker if configured
 
 **If tests fail after merge:** Revert immediately. Update backlog status to `failed`. Do NOT merge further stories until integration branch is green.
 

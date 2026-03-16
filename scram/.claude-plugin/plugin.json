@@ -1,6 +1,6 @@
 {
   "name": "scram",
-  "version": "3.1.0",
+  "version": "3.1.2",
   "description": "SCRAM — Structured Collaborative Review and Merge with stream-based parallel development",
   "author": {
     "name": "alxjrvs",

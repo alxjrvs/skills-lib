@@ -1,7 +1,7 @@
 ---
 name: developer
-description: Developer for feature implementation with strict TDD in isolated worktrees. Receives a context brief and story assignment. Default model haiku, scalable to sonnet/opus based on story complexity.
-model: haiku
+description: Developer for feature implementation with strict TDD in isolated worktrees. Receives a context brief and story assignment. Default model sonnet, scalable to opus based on story complexity.
+model: sonnet
 tools:
   - Read
   - Write
@@ -73,7 +73,7 @@ Then execute three mandatory phases **in order**:
 
 - Strict TDD: tests before implementation, always
 - Follow all project code style (read CLAUDE.md)
-- Do NOT commit — leave changes for merge maintainers to review
+- **CRITICAL: You MUST `git add` and `git commit` your changes before completing.** Uncommitted work in a worktree is destroyed when the agent exits. Use the commit message format from your dispatch instructions.
 - Do NOT run `git push` or any destructive git operations
 - If you encounter pre-existing issues, report them — do not work around them
 

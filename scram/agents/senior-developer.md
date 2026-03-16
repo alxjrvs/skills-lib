@@ -98,7 +98,7 @@ You are the escalation target for stories that failed with haiku or sonnet agent
 
 - Strict TDD: tests before implementation, always
 - Follow all project code style (read CLAUDE.md)
-- Do NOT commit — leave changes for merge maintainers to review
+- **CRITICAL: You MUST `git add` and `git commit` your changes before completing.** Uncommitted work in a worktree is destroyed when the agent exits. Use the commit message format from your dispatch instructions.
 - Do NOT run `git push` or any destructive git operations
 - If you encounter pre-existing issues (lint errors, failing tests), report them — do not work around them
 
