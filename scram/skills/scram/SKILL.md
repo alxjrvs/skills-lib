@@ -420,11 +420,40 @@ Present the backlog table to the user. Wait for user approval before dispatching
 
 ## Concurrent Streams (after G3)
 
-After G3 approval, three streams run concurrently. **The merge maintainer and code maintainer coordinate all three streams.** The orchestrator executes Agent tool calls on their behalf but has no decision-making role during streams.
+After G3 approval, three streams run concurrently.
+
+### Create Maintainer Team
+
+Before dispatching any stories, the orchestrator creates a persistent team for the two maintainers:
+
+1. **Create the team** via `TeamCreate` with `team_name: "scram-<feature-name>"`
+2. **Spawn Metron** (merge maintainer) as a named teammate: `Agent` with `name: "Metron"`, `team_name: "scram-<feature-name>"`, `subagent_type: "scram:merge-maintainer"`
+3. **Spawn Highfather** (code maintainer) as a named teammate: `Agent` with `name: "Highfather"`, `team_name: "scram-<feature-name>"`, `subagent_type: "scram:code-maintainer"`
+4. **Seed tasks** from `SCRAM_WORKSPACE/backlog.md` via `TaskCreate` — one task per story. These mirror the file backlog for within-session coordination. **`backlog.md` remains authoritative.** Tasks API is a convenience view, not the source of truth.
+
+The maintainers stay alive as persistent teammates for the entire stream phase (G3 to G4). They coordinate dual-approval directly via `SendMessage` without the orchestrator as relay. They go idle between turns — this is normal. Sending a message wakes them.
+
+**Files are authoritative, messages are transient.** Every decision the maintainers make must be written to `backlog.md` and `session.md`. SendMessage accelerates the decision; the file records it. If the team is destroyed and recreated, file state is the recovery mechanism.
+
+### Emergency Halt
+
+If the integration branch breaks after a merge (tests fail), the orchestrator writes a `HALT` file to the SCRAM workspace:
+```bash
+echo "Tests failed after merge of <story-id> at $(date)" > "$SCRAM_WORKSPACE/HALT"
+```
+Every dispatch path checks for this file before firing an Agent call. Do NOT dispatch further dev agents while `HALT` exists. Once the integration branch is fixed, remove the file and resume.
+
+### Mid-Stream Failure Recovery
+
+If a maintainer's session dies mid-stream (context exhaustion, crash):
+1. The orchestrator detects the absence (no response, idle timeout)
+2. Fall back to sequential one-shot dispatch for the affected maintainer role
+3. File state (`backlog.md`, `session.md`) is always complete enough to resume — the new one-shot agent reads the files to reconstruct context
+4. If the team is fully lost, tear it down via `TeamDelete` and continue with one-shot dispatch for both maintainers (the pre-teams model)
 
 ### Dev Stream (Red-Green-Refactor)
 
-Maintainers dispatch dev agents with `isolation: "worktree"` via the orchestrator's `Agent` tool. Each agent receives:
+Dev agents are **always one-shot** with `isolation: "worktree"`. They are NOT team members. The orchestrator dispatches them directly via the `Agent` tool — on maintainer instruction via SendMessage or task state. Each agent receives:
 - Story ID and description with acceptance criteria
 - SCRAM workspace path (absolute)
 - Context brief file path (`SCRAM_WORKSPACE/briefs/<story-slug>.md`)
@@ -480,23 +509,23 @@ Default escalation path for capability failures: sonnet → opus. If the same st
 
 ### Merge Stream
 
-Both maintainers run continuously. As each dev agent completes:
+Both maintainers are persistent teammates. As each dev agent completes:
 
 1. **Verify worktree metadata** — confirm the agent response includes `worktreePath` and `worktreeBranch`. If either is missing, the agent likely did not commit and the work is lost — flag immediately and redispatch before proceeding.
-2. Parse the agent's **structured Story Report**
-3. Review the worktree diff against the integration branch
+2. The orchestrator sends the **structured Story Report** to the maintainer team via `SendMessage`
+3. Maintainers review the worktree diff against the integration branch
 4. Verify implementation matches docs and ADRs
 5. Verify Red-Green-Refactor was followed: tests exist, tests pass, code is clean
-6. **Simple stories**: single maintainer approval (either merge or code maintainer)
-7. **Moderate/complex stories**: both maintainers approve independently — merge maintainer for correctness, code maintainer for harmony
+6. **Simple stories**: single maintainer approval (either Metron or Highfather)
+7. **Moderate/complex stories**: both maintainers approve independently via `SendMessage` peer-to-peer — Metron for correctness, Highfather for harmony. No orchestrator relay needed.
 8. **UI/UX stories** (when designer is active): designer approval required **in addition to** maintainer approval(s)
-9. Merge into integration branch (one atomic commit per story)
+9. Maintainers notify the orchestrator of the decision. The orchestrator executes the merge into the integration branch (one atomic commit per story).
 10. Run full test suite after merge
 11. Update `SCRAM_WORKSPACE/backlog.md` — set status to `merged`, record commit hash
 12. Update `SCRAM_WORKSPACE/session.md` — move story to Merged Stories, update timestamp
 13. Update tracker if configured
 
-**If tests fail after merge:** Revert immediately. Update backlog status to `failed`. Do NOT merge further stories until integration branch is green.
+**If tests fail after merge:** Revert immediately. Write `HALT` file to SCRAM workspace. Update backlog status to `failed`. Do NOT merge further stories until integration branch is green and `HALT` is removed.
 
 **Conflict resolution:**
 - Trivial (imports, adjacent edits): resolve in integration branch
@@ -517,15 +546,16 @@ They reconcile docs with actual implementation. If implementation significantly 
 
 After all three streams complete:
 
-1. Review every commit on the integration branch against the spec and ADRs
-2. Verify consistency across all merged work
-3. Run full test suite one final time
-4. Verify docs and ADRs accurately reflect the final implementation
-5. Verify `SCRAM_WORKSPACE/backlog.md` shows all stories as `merged`
-6. Close remaining tracker issues (if configured), add summary comment
-7. Merge or PR the integration branch to `main`
-8. Update session manifest — set `current_gate` to `complete` (or `G5` if retrospective enabled)
-9. If no retrospective: remove the `scram-session-*` memory reference (run is done)
+1. **Shut down the maintainer team** — send `SendMessage` with `message: {type: "shutdown_request"}` to both Metron and Highfather. Wait for shutdown responses. Then call `TeamDelete` to clean up the team.
+2. Review every commit on the integration branch against the spec and ADRs (dispatch maintainers as one-shots for this review)
+3. Verify consistency across all merged work
+4. Run full test suite one final time
+5. Verify docs and ADRs accurately reflect the final implementation
+6. Verify `SCRAM_WORKSPACE/backlog.md` shows all stories as `merged`
+7. Close remaining tracker issues (if configured), add summary comment
+8. Merge or PR the integration branch to `main`
+9. Update session manifest — set `current_gate` to `complete` (or `G5` if retrospective enabled)
+10. If no retrospective: remove the `scram-session-*` memory reference (run is done)
 
 If issues found, add fix stories to the backlog and redispatch.
 
@@ -533,99 +563,66 @@ If issues found, add fix stories to the backlog and redispatch.
 
 If the user opted in to a retrospective during G0, run this gate after G4 completes.
 
-The retrospective is a **three-phase collaborative process**: anonymous ticket submission, voting, and focused discussion. All artifacts are persisted under `SCRAM_WORKSPACE/retro/`.
+The retrospective is run by the **two maintainers only** (Metron and Highfather), dispatched as fresh one-shots. They are the only agents with a full-stream view — they saw every story, every approval, every conflict. Dev agents only experienced their single story. With only two participants, anonymity is not meaningful, so tickets are **attributed**.
+
+All artifacts are persisted under `SCRAM_WORKSPACE/retro/`.
 
 ```
 SCRAM_WORKSPACE/retro/
 ├── tickets/
-│   ├── 001.md          # anonymous tickets
-│   ├── 002.md
-│   └── ...
-├── votes.md            # aggregated vote tallies
+│   ├── metron.md           # Metron's tickets
+│   └── highfather.md       # Highfather's tickets
 └── discussions/
-    ├── <topic-slug>.md # discussion outputs
+    ├── <topic-slug>.md     # discussion outputs
     └── ...
 ```
 
-### Phase 1: Anonymous Ticket Submission
+### Phase 1: Ticket Submission
 
-Dispatch **every agent that participated** in the SCRAM run. Each agent receives:
-- The feature name and scope
+Dispatch both maintainers as **fresh one-shots** (not the persistent team — that was shut down at G4). Each receives:
 - The final `SCRAM_WORKSPACE/backlog.md` (showing story flow, escalations, failures)
-- A summary of what happened during their phase of work
+- The final `SCRAM_WORKSPACE/session.md`
 
-Each agent writes **one or more ticket files** to `SCRAM_WORKSPACE/retro/tickets/`. Tickets are **anonymous** — no agent name, no role. File names are sequential numbers (`001.md`, `002.md`, etc.). The orchestrator assigns numbers to prevent collisions.
+Each maintainer writes their tickets to `SCRAM_WORKSPACE/retro/tickets/<name>.md`. Tickets are **attributed** — each maintainer owns their observations.
 
 Ticket format:
 
 ```markdown
-# <short title>
+# Tickets — <Maintainer Name>
 
-## Category
+## 1. <short title>
+
+### Category
 process | tooling | communication | prompt_quality | missing_capability
 
-## Observation
-<what happened or didn't happen — factual, not attributional>
+### Observation
+<what happened or didn't happen — factual>
 
-## Impact
+### Impact
 <how this affected the SCRAM run — time wasted, quality risk, friction>
 
-## Suggested Improvement
+### Suggested Improvement
 <specific, actionable change to SKILL.md or an agent definition>
 <include the file to change and what to change in it>
+
+## 2. <short title>
+...
 ```
 
 Tickets must focus on **improving the SCRAM skill and agent prompts** — not the feature code. Each ticket should be specific enough to act on.
 
-**CRITICAL: No business-specific information.** Tickets must describe process improvements in generic terms. Do not reference the feature name, project name, file paths, code changes, business logic, or any details that would reveal what was being built. Describe only how the SCRAM workflow, agent prompts, or skill definitions can be improved. Example: "context briefs lacked dependency info" not "the auth module brief didn't mention the session store." This constraint applies to all retro artifacts — tickets, votes, discussions, and the final compiled output.
+**CRITICAL: No business-specific information.** Tickets must describe process improvements in generic terms. Do not reference the feature name, project name, file paths, code changes, business logic, or any details that would reveal what was being built. Describe only how the SCRAM workflow, agent prompts, or skill definitions can be improved. This constraint applies to all retro artifacts.
 
-After all agents have submitted, the orchestrator collects all tickets into the workspace.
+### Phase 2: Discussion
 
-### Phase 2: Voting
+Dispatch both maintainers again. Each reads all tickets (theirs and the other's). For each ticket, they:
+- **Agree** and propose a specific change
+- **Disagree** with reasoning
+- **Refine** with modifications
 
-Dispatch **every participating agent again**. Each agent reads all tickets in `SCRAM_WORKSPACE/retro/tickets/` and votes for the ones that most deserve discussion. Each agent gets a number of votes equal to **half the ticket count, rounded up** (e.g., 10 tickets = 5 votes per agent).
+The orchestrator identifies tickets with agreement and synthesizes the proposed changes. Where disagreement exists, present both views to the user.
 
-Each agent returns their votes as a list of ticket numbers. The orchestrator tallies votes and writes the results to `SCRAM_WORKSPACE/retro/votes.md`:
-
-```markdown
-# Retrospective Votes
-
-| Ticket | Title | Votes |
-|--------|-------|-------|
-| 003 | Context briefs missing dependency info | 7 |
-| 001 | RED phase instructions unclear on test scope | 5 |
-| 008 | Merge stream bottleneck on dual approval | 4 |
-| ... | ... | ... |
-```
-
-### Phase 3: Consensus Discussion
-
-The goal is **consensus** — not a list of competing proposals. The team must converge on a single agreed-upon change for each topic.
-
-Take the **top 3 voted tickets** (or fewer if there aren't enough with significant votes). For each topic, run a consensus round:
-
-#### Round 1: Propose
-
-Dispatch **all participating agents**. Each agent receives:
-- The ticket text
-- The current content of the file the ticket suggests changing (read the actual SKILL.md or agent .md file)
-- The vote count and any related tickets
-
-Each agent proposes a **specific prompt change** — the exact text to add, remove, or modify in the relevant skill or agent file.
-
-#### Round 2: React and Converge
-
-Dispatch **all participating agents again**. Each agent reads all proposals from Round 1 for this topic and responds:
-- **Support** a proposal (with optional refinements)
-- **Counter-propose** if no existing proposal addresses the issue well (must explain why)
-
-The orchestrator identifies the proposal with the most support. If a proposal has **majority support** (>50% of participating agents), it becomes the **consensus change**. If refinements were suggested, incorporate them into the final version.
-
-If no majority emerges, the orchestrator synthesizes the most common elements into a merged proposal and flags it as **partial consensus** for the user to resolve.
-
-#### Write Discussion Output
-
-For each topic, write the consensus result to `SCRAM_WORKSPACE/retro/discussions/<topic-slug>.md`:
+Write discussion results to `SCRAM_WORKSPACE/retro/discussions/<topic-slug>.md`:
 
 ```markdown
 # Discussion: <ticket title>
@@ -633,51 +630,45 @@ For each topic, write the consensus result to `SCRAM_WORKSPACE/retro/discussions
 ## Ticket
 <original ticket text>
 
-## Consensus Status
-consensus | partial_consensus
+## Status
+agreed | disagreed
 
-## Agreed Change
+## Proposed Change
 **File:** <path to skill or agent file>
 **Change:** <add | modify | remove>
 **Current text:**
 > <the existing text, if modifying or removing>
 
-**Agreed text:**
-> <the consensus text>
+**Proposed text:**
+> <the agreed text>
 
-**Support:** <count>/<total> agents
-**Rationale:** <why the team agreed this improves the prompt>
+**Rationale:** <why this improves the prompt>
 
-## Dissenting Views (if any)
-- <agent role>: <concern and why they disagreed>
+## Disagreement (if any)
+- <maintainer>: <concern>
 ```
 
 ### Compile and Present
 
-After all discussions complete, the orchestrator compiles the results and presents them as the **final section** of the completion report:
+The orchestrator compiles the results:
 
 ```
 ## SCRAM Retrospective
 
-### Tickets Submitted: <count>
-### Consensus Changes
+### Tickets: <count> from Metron, <count> from Highfather
 
-#### 1. <ticket title> (<vote count> votes) — CONSENSUS
-**File:** <file to change>
-**Change:** <summary of agreed change>
-**Support:** <count>/<total> agents
+### Agreed Changes
+1. <ticket title> — <summary of proposed change>
+2. ...
 
-#### 2. <ticket title> (<vote count> votes) — CONSENSUS | PARTIAL CONSENSUS
-...
+### Disagreements
+1. <ticket title> — Metron: <view> / Highfather: <view>
 
-#### 3. <ticket title> (<vote count> votes) — CONSENSUS | PARTIAL CONSENSUS
-...
-
-### Other Tickets (not discussed)
-- <ticket title> (<vote count> votes) — <one-line summary>
+### Other Tickets
+- <ticket title> — <one-line summary>
 ```
 
-**Consensus changes** are presented for the user to approve and apply. **Partial consensus changes** include the dissenting views so the user can make the final call. The orchestrator does not apply changes automatically.
+**Agreed changes** are presented for the user to approve and apply. **Disagreements** are presented with both views for the user to decide. The orchestrator does not apply changes automatically.
 
 ### File Issue on SCRAM Plugin Repo
 
@@ -699,10 +690,12 @@ The session manifest MUST be kept current. Update `SCRAM_WORKSPACE/session.md` (
 | Event | Update |
 |-------|--------|
 | Gate transition (G0→G1, G1→G2, etc.) | Set `current_gate`, update `Current State` |
+| Maintainer team created (G3) | Record team name in `Current State` |
 | Story dispatched | Add to `In-Progress Stories` |
 | Story merged | Move to `Merged Stories` with commit hash, remove from in-progress |
 | Story failed/escalated | Add to `Escalations` with failure reason and tier |
 | Doc refinement batch completed | Note in `Current State` |
+| Maintainer team shut down (G4) | Note in `Current State` |
 | Context limit approaching | Write full state to manifest before checkpointing |
 
 ### Context Limit Recovery
