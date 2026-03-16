@@ -36,4 +36,4 @@ Personal Claude Code plugin marketplace.
 
 ---
 
-![No, not that Jarvis](https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDZ0OHRtdHVrMjRkMHN0NHlsdGE3ZG5kMG14MzNhbGRjOGszYzV0aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o6Mb6n3m2tBqgCkVy/giphy.gif)
+![No, not that Jarvis](https://media.giphy.com/media/xTiN0uevJeTKxWbW3S/giphy.gif)
