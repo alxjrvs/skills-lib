@@ -283,13 +283,15 @@ Each ADR follows: Context, Decision, Consequences, Status.
 
 ### G1 Review
 
-Both maintainers + one senior dev review ADRs:
+**Code maintainer (Highfather)** leads ADR review with one senior dev — they own architectural decisions:
 - Are decisions well-reasoned with clear trade-offs?
 - Are they feasible to implement?
-- Do they fit existing project patterns?
+- Do they fit existing project patterns and long-term codebase direction?
 - If designer is active: designer reviews design ADRs for feasibility and consistency
 
-If issues found, revise and re-submit. Once approved, maintainers merge ADRs into the integration branch.
+**Merge maintainer (Metron)** gives a lightweight approval — not driving the review, but catching any technically wild decisions that would make implementation unreasonable. Approve or flag concerns only.
+
+If issues found, revise and re-submit. Once approved, code maintainer merges ADRs into the integration branch.
 
 ## G2: User-Facing Docs
 
@@ -303,14 +305,19 @@ Dispatch doc specialists with `isolation: "worktree"`:
 
 ### G2 Review
 
-Both maintainers + one senior dev review the docs:
-- **Completeness** — does it cover all features from the initial premise?
-- **Feasibility** — can a developer implement this as described?
-- **Clarity** — are types, signatures, and behaviors unambiguous?
+Both maintainers + one senior dev review the docs, each through their own lens:
+
+**Code maintainer (Highfather)** reviews for architectural coherence:
 - **Consistency** — does it fit with existing project conventions and docs?
-- **Testability** — can TDD tests be derived directly from this doc?
 - **ADR alignment** — do docs reflect the architectural decisions from G1?
-- If designer is active: designer reviews for design ADR alignment
+- **Completeness** — does it cover all features from the initial premise?
+
+**Merge maintainer (Metron)** reviews for implementability:
+- **Clarity** — are types, signatures, and behaviors unambiguous?
+- **Testability** — can TDD tests be derived directly from this doc?
+- **Feasibility** — can a developer implement this as described?
+
+If designer is active: designer reviews for design ADR alignment
 
 If issues found, doc specialists revise and re-submit. Once approved, maintainers merge docs into the integration branch.
 

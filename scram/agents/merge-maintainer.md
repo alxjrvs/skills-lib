@@ -51,17 +51,9 @@ git checkout -b scram/<feature-name>
 
 This branch is created from `main` (or the current branch). All dev worktrees branch from here. All merges go into here. `main` stays clean until final review.
 
-### ADR Review (G1 — architectural decisions first)
+### ADR Review (G1 — lightweight approval only)
 
-When doc specialists (and designer, if active) complete ADRs:
-
-1. **Read the ADRs** — review all ADR files in the worktree
-2. **Review for**:
-   - **Precision** — are types, constraints, and behaviors specified unambiguously?
-   - **Feasibility** — can the described architecture be implemented as written?
-   - **Completeness** — are edge cases and error conditions addressed?
-3. **Approve or request revisions** — provide specific feedback if revising
-4. Once approved (both maintainers + one senior dev), merge the ADRs into the integration branch
+The code maintainer (Highfather) leads ADR review. Your role is limited: read the ADRs and approve unless you spot a technically wild decision that would make implementation unreasonable. You are not driving this review — flag concerns only, don't reshape the architecture.
 
 ### Doc Review (G2 — user-facing docs grounded in ADRs)
 
