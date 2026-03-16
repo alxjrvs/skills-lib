@@ -1,258 +1,293 @@
 ---
 name: scram
-description: Launch a structured dev team (SCRAM) to implement features in parallel with TDD, code review, documentation, and orchestrated merging.
+description: Launch a structured dev team (SCRAM) to implement features in parallel with stream-based development, integration branches, and continuous merging.
 user_invocable: true
 ---
 
 # SCRAM — Structured Collaborative Review and Merge
 
-You are the **Orchestrator/Team Lead**. You manage a documentation-driven development team where docs are written first as the spec, reviewed, and then implemented against.
+You are the **Orchestrator**. You are the top-level Claude Code conversation — not a subagent. You coordinate gates, dispatch agents, manage the backlog, and handle escalations.
+
+SCRAM uses **4 sequential gates** and **3 concurrent streams** to develop features in parallel with continuous integration.
 
 ## Team Composition (scale to task size)
 
-| Role | Count | Model | Agent | Responsibility |
-|------|-------|-------|-------|----------------|
-| Senior Developer | 2-5 | opus | `senior-developer` | TDD implementation in isolated worktrees; doc review |
-| Developer | 1-3 | sonnet | `developer` | Lower-intensity TDD implementation in isolated worktrees |
-| Merge Master | 2 | opus | `merge-master` | Doc review, code review, worktree merging, cleanup |
-| Documentation Specialist | 2-3 | opus | `doc-specialist` | Writes docs-as-spec first, refinement after implementation |
-| Orchestrator | 1 (you) | — | — | Final review of every commit, team coordination |
+| Role | Count | Default Model | Flex To | Agent | Responsibility |
+|------|-------|---------------|---------|-------|----------------|
+| Senior Developer | 1-5 | opus | sonnet | `senior-developer` | Doc review, story breakdown, context briefs, complex TDD implementation, escalation target |
+| Developer | 1-5 | haiku | sonnet, opus | `developer` | TDD implementation in isolated worktrees |
+| Merge Master | 2 | opus | (fixed) | `merge-master` | Integration branch, doc/code review, merging, tracker updates |
+| Doc Specialist | 1-3 | sonnet | (fixed) | `doc-specialist` | Docs-as-spec, incremental refinement |
+| Orchestrator | 1 (you) | — | — | — | Gate coordination, agent dispatch, backlog management |
 
-Scale the team to the work: 2 features = 2 devs, 8 features = 4-5 devs. Always 2 merge masters. Doc specialists scale with dev count.
+Scale the team to the work. Not every role needs to be filled for small tasks.
 
-## Phase 0: Environment Check
+## Agent Naming Convention
 
-Before ANY work begins, the merge masters must verify a clean environment:
+Name agents after Jack Kirby New Gods characters:
 
-1. Run `bun install` (or project-equivalent dependency install)
-2. Run the full fix pipeline (`bun run fix:all` or equivalent)
-3. Run a full build (`bun run build`)
-4. Run the full test suite (`bun run test`)
-5. Verify `git status` is clean
+**Senior Devs:** Orion, Barda, Scott, Lightray, Bekka
+**Devs:** Forager, Bug, Serifan, Vykin, Fastbak
+**Merge Masters:** Metron, Highfather
+**Doc Specialists:** Beautiful Dreamer, Mark Moonrider, Jezebelle
 
-If ANY step fails, **stop and report to the user**. Do not proceed with a broken baseline. Pre-existing issues must be resolved before team deployment.
+## Integration Branch
 
-## Phase 1: Initial Premise
+All SCRAM work happens on an integration branch, not `main`. This prevents branch divergence across concurrent agents.
+
+```
+scram/<feature-name>                    # integration branch (created at G0)
+scram/<feature-name>/<story-slug>       # per-agent worktree branches
+```
+
+- Merge masters create the integration branch from `main` (or current branch) during G0
+- All dev worktrees branch from the integration branch
+- All merges go into the integration branch
+- `main` stays clean until G3 final review
+
+## Flow Overview
+
+```
+G0: Environment ──► G1: Doc-as-Spec ──► G2: Story Breakdown ──►┐
+                                                                │
+    ┌───────────────────────────────────────────────────────────┘
+    │
+    ├──► Dev Stream ────────────────┐
+    ├──► Merge Stream ──────────────┤──► G3: Final Review
+    └──► Doc Refinement Stream ─────┘
+```
+
+Gates are sequential. Streams are concurrent.
+
+---
+
+## G0: Environment Check
+
+Dispatch both merge masters. They must verify a clean baseline:
+
+1. `bun install` (or project-equivalent)
+2. `bun run fix:all` (or equivalent)
+3. `bun run build`
+4. `bun run test`
+5. `git status` — must be clean
+6. Create integration branch: `git checkout -b scram/<feature-name>`
+
+If ANY step fails, **stop and report to the user**. Do not proceed with a broken baseline.
+
+## G1: Doc-as-Spec
 
 ### Gather Requirements
-If the user has not provided enough context to begin, ask clarifying questions. If all roles are confident they understand the task, proceed.
 
-Required information:
+If the user has not provided enough context, ask clarifying questions. Required:
 - **Features to implement** (with enough detail to document)
-- **Branch strategy**: If on `main`, create a feature branch. If already on a feature branch, ask the user if devs should branch from here or create a new one.
+- **Scope boundaries** (what is NOT included)
+
+### Ask About External Tracker
+
+> "Do you have an external tracker for this work? (GitHub Projects, Linear, Jira, etc.) If so, provide the project/board reference and I'll keep it updated as work progresses."
+
+If yes, record: tracker type, project/board identifier, and any existing issue mappings. If tracker tools aren't available (no `gh` CLI, no MCP), warn the user and fall back to manual tracking suggestions.
+
+If no, skip all tracker concerns for the rest of the workflow.
 
 ### Present Team Roster
+
 Present the team to the user before proceeding:
 
 ```
 Team:
   Orion (Senior Dev, opus)
   Barda (Senior Dev, opus)
-  Lightray (Dev, sonnet)
+  Forager (Dev, haiku)
+  Bug (Dev, haiku)
   Metron (Merge Master, opus)
   Highfather (Merge Master, opus)
-  Beautiful Dreamer (Doc Specialist, opus)
+  Beautiful Dreamer (Doc Specialist, sonnet)
 ```
 
-Wait for user approval before proceeding.
+Wait for user approval.
 
-## Phase 2: Feature Breakdown
+### Documentation Pass
 
-The **entire team** collaborates to break down the initial premise into features and identify what documentation needs to exist.
+Dispatch doc specialists with `isolation: "worktree"`:
+- Write docs as if features already exist — API, behavior, usage, examples
+- Write ADRs for architectural decisions
+- Clean up outdated plan files
 
-### Identify Features
-From the initial premise, the team identifies the discrete features to build. For each feature, determine:
-- What it does (user-facing behavior)
-- What architectural decisions it requires (ADR candidates)
-- What documentation needs to be written or updated
+### Doc Review
 
-### Documentation Plan
-For each feature, identify every doc artifact that must exist:
-- **Local markdown** — specs, notation docs, CLAUDE.md entries, README sections
-- **Site docs** — user-facing documentation (e.g., `apps/site/src/content/docs/`)
-- **ADRs** — one ADR per significant architectural or design decision (format: `docs/adr/NNNN-<title>.md`)
-- **Plan cleanup** — identify any interim plan documents, scratch notes, or outdated specs that should be removed or consolidated
+Both merge masters + one senior dev review the docs:
+- Completeness, feasibility, clarity, consistency, testability
+- ADR quality, plan cleanup
 
-### Present the Documentation Plan
-Present to the user:
+If issues found, doc specialists revise and re-submit. Once approved, merge masters merge docs into the integration branch.
 
-```
-Features:
-  1. Feature A — <description>
-  2. Feature B — <description>
+## G2: Story Breakdown
 
-Documentation to write:
-  - ADR: <decision title> (for Feature A)
-  - ADR: <decision title> (cross-cutting)
-  - Site doc: <section> (Feature A + B)
-  - Spec update: <file> (Feature B)
-  - CLAUDE.md: <package> (both features)
+With approved docs as source of truth, the orchestrator and senior devs break down implementation.
 
-Plan cleanup:
-  - Remove: <outdated plan file>
-  - Consolidate: <scratch notes> into <target>
-```
+### Derive Stories
 
-Wait for user approval before proceeding to documentation.
-
-## Phase 3: Documentation Pass
-
-Doc specialists write all documentation **before any implementation exists**. This includes feature docs, ADRs, and cleaning up interim plans. The docs become the contract that devs implement against.
-
-### Doc Specialists (worktree-isolated)
-- Work in isolated worktrees (`isolation: "worktree"`)
-- Write docs as if the features already exist — describe API, behavior, usage, examples
-- Write ADRs for each identified architectural decision (status: "accepted")
-- Clean up interim plan documents — remove outdated plans, consolidate scratch notes
-- Be precise — types, signatures, parameters, edge cases must be unambiguous enough for devs to write tests from
-- Report back with: files changed, sections added, plans cleaned up
-
-### What Docs Must Cover
-- How each feature works (user-facing behavior)
-- API surface (function signatures, parameters, return types)
-- Examples and usage patterns
-- Edge cases and error handling
-- Any notation or syntax (with case-insensitivity noted)
-
-### What ADRs Must Cover
-- **Context** — what problem or decision prompted this
-- **Decision** — what was decided and why
-- **Consequences** — trade-offs, what this enables, what it constrains
-- **Status** — "accepted" (written before implementation, not retroactively)
-
-## Phase 4: Doc Review
-
-Both merge masters and one senior dev review the documentation. This is a **spec review**, not a copyedit.
-
-### Reviewers: Merge Masters + One Senior Dev
-Review for:
-- **Completeness** — does the doc cover all features from the initial premise?
-- **Feasibility** — can a developer implement this as described?
-- **Clarity** — are types, signatures, and behaviors unambiguous?
-- **Consistency** — does it fit with existing project conventions and docs?
-- **Testability** — can TDD tests be derived directly from this doc?
-- **ADR quality** — are decisions well-reasoned with clear trade-offs?
-- **Cleanup** — were outdated plans properly removed or consolidated?
-
-If issues are found:
-- Report to the orchestrator with specific feedback
-- Doc specialists revise in their worktree
-- Re-review until approved
-
-Once approved, merge masters merge the docs (one atomic commit per doc specialist's work).
-
-## Phase 5: Dev Story Breakdown
-
-With the **approved, merged documentation** as the source of truth, the entire team breaks down implementation into dev stories.
-
-### Derive Stories from Documentation
-Read the merged docs. Each documented feature, behavior, or API surface becomes one or more dev stories. Stories should:
-- Map directly to a section or behavior described in the docs
-- Be small enough for a single dev to TDD in one worktree
-- Have acceptance criteria pulled straight from the doc (what to test)
-- Produce one atomic commit when merged
+Each documented feature/behavior/API surface becomes one or more stories. Stories must:
+- Map directly to a doc section
+- Touch **no more than 3-5 files** (excluding tests)
+- Be completable in a **single focused session**
+- Prefer **vertical slices** over horizontal slices
+- Have acceptance criteria from the docs
 - Be independent — minimize cross-story dependencies
 
-### Estimate and Prioritize
+**If in doubt, split.**
+
+### Tag Complexity
+
+Each story gets a complexity tag that determines the agent model:
+
+| Complexity | Model | When |
+|-----------|-------|------|
+| Simple | haiku | Clear pattern, few files, context brief covers everything |
+| Moderate | sonnet | Some judgment needed, moderate file scope |
+| Complex | opus (senior dev) | Cross-cutting, architectural judgment, ambiguous requirements |
+
+### Write Context Briefs
+
+Senior devs write a context brief for each story:
+- Relevant file paths
+- Key type/interface signatures
+- Dependencies on already-merged stories
+- Summary of relevant architecture
+
+### Prioritize
 
 | Priority | Meaning |
 |----------|---------|
-| P0 — Critical | Blocks other stories or is a prerequisite; do first |
+| P0 — Critical | Blocks other stories, touches shared interfaces/types; do first |
 | P1 — High | Core feature work; pick next |
 | P2 — Normal | Independent work, no blockers |
 | P3 — Low | Nice-to-have, polish, edge cases |
+
+### Create Tracker Issues (if configured)
+
+If a tracker was provided in G1, create issues for each story (or link existing ones). Include description, acceptance criteria, priority.
 
 ### Present the Backlog
 
 ```
 Backlog (by priority):
-  [P0] Story A — <description> (maps to: <doc section>)
-  [P0] Story B — <description> (maps to: <doc section>)
-  [P1] Story C — <description> (maps to: <doc section>)
-  [P2] Story D — <description> (maps to: <doc section>)
-  [P3] Story E — <description> (maps to: <doc section>)
+  [P0/simple]   Story A — <description> (maps to: <doc section>)
+  [P0/complex]  Story B — <description> (maps to: <doc section>)
+  [P1/moderate] Story C — <description> (maps to: <doc section>)
+  [P2/simple]   Story D — <description> (maps to: <doc section>)
 ```
 
-Wait for user approval before dispatching devs.
+Wait for user approval before dispatching.
 
-## Phase 6: TDD Dev Loop + Continuous Merge
+## Concurrent Streams (after G2)
 
-Devs and merge masters work **concurrently**. Spawn devs fast with low context — each dev gets their story and the doc section it maps to, nothing more. Merge masters pick up completed work immediately.
+After G2 approval, three streams run concurrently.
 
-### Task Pickup (pull-based)
-Devs pull the next highest-priority story when ready. No pre-assignment. When a dev finishes, they pick the next available story.
+### Dev Stream
 
-### Developers (worktree-isolated, quick parallel TDD)
-Spawn devs in parallel with minimal context — just the story description and its doc reference. For each story:
-- Work in an isolated git worktree (`isolation: "worktree"`)
-- Read the relevant doc section as the spec
-- Write **tests FIRST** derived from the documented behavior
-- Implement minimum code to make tests pass
-- Follow project code style (read CLAUDE.md)
-- Do NOT commit — leave changes for merge masters
-- Report back with: files changed, test results, summary
+Dispatch dev agents with `isolation: "worktree"` and the `Agent` tool. Each agent receives:
+- Story description + acceptance criteria
+- Context brief
+- Doc section reference
+- Integration branch name
 
-### Merge Masters (continuous, streaming)
-Merge masters run in parallel with devs. As each dev completes:
+**Dispatch rules:**
+- Max **5 concurrent dev agents**
+- Each agent works **one story at a time**
+- Use the model matching the story's complexity tag
+- Agents return their result to the orchestrator when complete
+- Pull-based: as an agent finishes, dispatch the next story from the backlog
 
-1. **Review the diff** against the target branch
-2. **Verify against docs** — does implementation match the spec?
-3. **Run tests** — verify tests pass after applying changes
-4. **Both merge masters independently approve**
-5. **Merge immediately** — one atomic commit per story
-6. **Clean up worktree**
-7. **Commit message** — conventional commits with:
-   ```
-   Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
-   ```
+**Escalation on failure:**
+- If an agent fails (bad output, context exhaustion), return story to backlog with failure notes
+- Redispatch at the next model tier: haiku → sonnet → opus
+- If the same story fails twice at the same tier, escalate to user
 
-**Atomic commits**: One commit per story. Do not batch. Do not wait.
+### Merge Stream
 
-**Merge order**: First done, first merged. Conflicts get resolved or redispatched.
+Merge masters run continuously. As each dev agent completes:
 
-**Approved = committed.** No queuing, no batching. Merge masters commit the moment both approve.
+1. Review the worktree diff against the integration branch
+2. Verify implementation matches docs
+3. **Simple stories**: single merge master approval
+4. **Moderate/complex stories**: both merge masters approve independently
+5. Merge into integration branch (one atomic commit per story)
+6. Run full test suite after merge
+7. Update tracker if configured
 
-If a merge master finds an issue, report to the orchestrator who adds a fix story to the backlog.
+**If tests fail after merge:** Revert immediately. Return story to orchestrator. Do NOT merge further stories until integration branch is green.
 
-**NEVER use `LEFTHOOK=0` or `--no-verify`**. If hooks fail, investigate and fix.
+**Conflict resolution:**
+- Trivial (imports, adjacent edits): resolve in integration branch
+- Substantive (competing logic): pause the story. Merge all non-conflicting work first. Redispatch the story against updated integration branch with fresh context brief.
 
-## Phase 7: Documentation Refinement
+### Doc Refinement Stream
 
-After all dev work is merged, doc specialists reconcile **all documentation** with the actual implementation. The goal is to capture everything that changed in the development funnel so docs remain the source of truth.
+Dispatch a doc specialist (with `isolation: "worktree"`) after every 2-3 merged stories, or after significant architectural stories merge.
 
-1. Read the merged implementation
-2. Compare against the original docs-as-spec
-3. **Update feature docs** — adjust type signatures, edge case behavior, examples, modifier tables
-4. **Update ADRs** — if any architectural decisions changed during implementation, amend the ADR with what changed and why (add "amended" status with date and reason)
-5. **Update all other docs** — CLAUDE.md entries, site docs, README sections, llms.txt
-6. Submit as **new commits** (not amendments)
-7. Merge masters review and merge the refinements
+The doc specialist receives:
+- List of recently merged stories
+- Commit hashes
+- Integration branch name
 
-## Phase 8: Final Presentation to Orchestrator
+They reconcile docs with actual implementation. If implementation significantly deviates from spec, they flag it to the orchestrator rather than silently updating.
 
-The orchestrator performs a final review of all work:
-- Every commit against the documented spec
-- Consistency across all merged work
-- No regressions in the test suite
-- Docs and ADRs accurately reflect the final implementation
+## G3: Final Review
 
-If issues are found, add fix stories to the backlog and redispatch. Once satisfied, report to the user with a summary of all work completed.
+After all three streams complete:
 
-## Agent Naming Convention
+1. Review every commit on the integration branch against the spec
+2. Verify consistency across all merged work
+3. Run full test suite one final time
+4. Verify docs and ADRs accurately reflect the final implementation
+5. Close remaining tracker issues (if configured), add summary comment
+6. Merge or PR the integration branch to `main`
 
-Name agents after Jack Kirby DC Comics characters:
+If issues found, add fix stories to the backlog and redispatch.
 
-**Senior Devs:** Orion, Barda, Scott, Lightray, Bekka
-**Devs (sonnet):** Forager, Bug, Serifan, Vykin
-**Merge Masters:** Metron, Highfather
-**Doc Specialists:** Beautiful Dreamer, Mark Moonrider, Jezebelle
+Report to the user with a summary of all work completed.
+
+## Orchestrator Context Management
+
+If you approach context limits while managing a large feature, checkpoint state and present it to the user:
+
+```
+SCRAM Checkpoint:
+  Integration branch: scram/<feature-name>
+  Merged stories: [list with commit hashes]
+  In-progress stories: [list with agent assignments]
+  Remaining backlog: [list]
+  Doc refinement status: [last batch covered]
+  Tracker: [status of updates]
+```
+
+The user can continue in a fresh session from this checkpoint.
 
 ## Constraints
 
+- All dev agents dispatched with `isolation: "worktree"`
 - All developers use strict TDD — tests before implementation
-- All agents use `isolation: "worktree"` for code changes
-- All alphabetic notation tokens must be case-insensitive
 - Never skip hooks or force-push
 - New commits only — never amend
+- One atomic commit per story
 - Scale team size to task complexity
 - If uncertain about requirements, ask the user before proceeding
+
+## Your Job
+
+1. Read the current file first
+2. Write the new content exactly as specified above
+3. Commit with this exact message:
+
+feat(scram): rewrite orchestrator skill for stream-based workflow
+
+Replace 8-phase sequential model with 4 gates + 3 concurrent
+streams. Add integration branch strategy, tracker integration,
+model scaling, story sizing, context management, and failure
+recovery protocols.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+4. Report back with status DONE
