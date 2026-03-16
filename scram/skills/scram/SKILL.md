@@ -677,6 +677,17 @@ After all discussions complete, the orchestrator compiles the results and presen
 
 **Consensus changes** are presented for the user to approve and apply. **Partial consensus changes** include the dissenting views so the user can make the final call. The orchestrator does not apply changes automatically.
 
+### File Issue on SCRAM Plugin Repo
+
+After presenting the retrospective, ask the user:
+
+> "Would you like me to open an issue on `alxjrvs/skills` with these retrospective results? This helps track improvements to the SCRAM plugin over time."
+
+If yes, create a GitHub issue on `alxjrvs/skills` with:
+- **Title:** `retro: <feature-name> — <count> consensus changes`
+- **Labels:** `retrospective`
+- **Body:** The full compiled retrospective output (consensus changes, partial consensus, other tickets), plus a link to the project and integration branch for context.
+
 After presenting the retrospective, update session manifest to `complete` and remove the `scram-session-*` memory reference.
 
 ## Session State Updates

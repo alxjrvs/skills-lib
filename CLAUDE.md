@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-A personal Claude Code plugin marketplace hosted at `alxjrvs/skills-lib`. Users install via:
+A personal Claude Code plugin marketplace hosted at `alxjrvs/skills`. Users install via:
 
 ```
-/plugin marketplace add alxjrvs/skills-lib
+/plugin marketplace add alxjrvs/skills
 /plugin install <plugin-name>@jrvs-skills
 ```
 

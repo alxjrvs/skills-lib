@@ -1,11 +1,11 @@
-# skills-lib
+# skills
 
 Personal Claude Code plugin marketplace.
 
 ## Install
 
 ```
-/plugin marketplace add alxjrvs/skills-lib
+/plugin marketplace add alxjrvs/skills
 ```
 
 ## Install a plugin
