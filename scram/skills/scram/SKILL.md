@@ -26,6 +26,8 @@ SCRAM uses **5 sequential gates** (plus an optional retrospective) and **3 concu
 
 Scale the team to the work. Not every role needs to be filled for small tasks.
 
+**Docs-only runs (`run_type: docs`):** Skip the code maintainer role entirely — there is no code to review for structural harmony. The merge maintainer gets sole approval authority for all stories. The developer report format replaces "TDD discipline" with "Verification method" (accepts: `build_passes | lint_passes | manual_diff | none`).
+
 ## Agent Naming Convention
 
 Name agents after Jack Kirby New Gods characters:
@@ -97,6 +99,7 @@ feature: <feature-name>
 integration_branch: scram/<feature-name>
 workspace: <absolute SCRAM_WORKSPACE path>
 current_gate: G0 | G1 | G2 | G3 | streams | G4 | G5 | complete
+run_type: code | docs | mixed
 retrospective: true | false
 tracker: <tracker config or "none">
 created: <YYYY-MM-DD HH:MM:SS>
@@ -285,6 +288,7 @@ Each ADR follows: Context, Decision, Consequences, Status.
 - Are decisions well-reasoned with clear trade-offs?
 - Are they feasible to implement?
 - Do they fit existing project patterns and long-term codebase direction?
+- **No implementation detail in ADRs** — reject ADRs containing file paths, line numbers, or implementation specifics. Those belong in context briefs (G3), not architectural decisions.
 - If designer is active: designer reviews design ADRs for feasibility and consistency
 
 **Merge maintainer (Metron)** gives a lightweight approval — not driving the review, but catching any technically wild decisions that would make implementation unreasonable. Approve or flag concerns only.
@@ -365,6 +369,11 @@ Devs write a context brief **file** for each story at `SCRAM_WORKSPACE/briefs/<s
 ## Files
 - <file path> — <why it's relevant>
 
+## Locators
+Use content-stable grep anchors to identify locations in files. **Never use line numbers** — they go stale when earlier stories modify the same files.
+- Good: "Find the sentence beginning with 'X' and change to..."
+- Bad: "Line 42 of foo.ts"
+
 ## Types & Interfaces
 - <key type/interface signatures>
 
@@ -374,9 +383,15 @@ Devs write a context brief **file** for each story at `SCRAM_WORKSPACE/briefs/<s
 ## Architecture
 <summary of relevant architecture and relevant ADRs from G1>
 
+## Deliverables
+- [ ] <file> — <specific change>
+- [ ] <file> — <specific change>
+
 ## UI/UX Context (if tagged)
 <relevant design ADRs, existing UI patterns, component references>
 ```
+
+**Brief review rule (G3):** Reject briefs that contain line-number locators. They must use content-anchored references only.
 
 These files live in the SCRAM workspace and are read by dev agents via absolute path.
 
@@ -400,12 +415,12 @@ Write the backlog to `SCRAM_WORKSPACE/backlog.md`:
 ```markdown
 # SCRAM Backlog — <feature-name>
 
-| # | Story | Priority | Complexity | UI/UX | Status | Agent | Commit |
-|---|-------|----------|------------|-------|--------|-------|--------|
-| 1 | Story A | P0 | simple | no | pending | — | — |
-| 2 | Story B | P0 | complex | no | pending | — | — |
-| 3 | Story C | P1 | moderate | yes | pending | — | — |
-| 4 | Story D | P2 | simple | no | pending | — | — |
+| # | Story | Priority | Complexity | Depends On | UI/UX | Status | Agent | Commit |
+|---|-------|----------|------------|------------|-------|--------|-------|--------|
+| 1 | Story A | P0 | simple | — | no | pending | — | — |
+| 2 | Story B | P0 | complex | — | no | pending | — | — |
+| 3 | Story C | P1 | moderate | 1, 2 | yes | pending | — | — |
+| 4 | Story D | P2 | simple | — | no | pending | — | — |
 ```
 
 **Status values:** `pending` → `in_progress` → `in_review` → `merged` | `failed` → `escalated` → `in_progress`
@@ -498,6 +513,7 @@ Each story follows three mandatory phases in order:
 **Dispatch rules:**
 - Max **5 concurrent dev agents**
 - Each agent works **one story at a time**, completing all three phases
+- **Do not dispatch a story whose `Depends On` column has unmerged stories** — check backlog status first
 - Use the model matching the story's complexity tag
 - Agents return a **structured Story Report** to the maintainers when complete
 - Pull-based: as an agent finishes, maintainers dispatch the next story from the backlog
@@ -524,7 +540,8 @@ Both maintainers are persistent teammates. As each dev agent completes:
 1. **Verify worktree metadata** — confirm the agent response includes `worktreePath` and `worktreeBranch`. If either is missing, the agent likely did not commit and the work is lost — flag immediately and redispatch before proceeding.
 2. The orchestrator sends the **structured Story Report** to the maintainer team via `SendMessage`
 3. Maintainers review the worktree diff against the integration branch
-4. Verify implementation matches docs and ADRs
+4. **Verify one-commit-per-story** — reject if the diff touches files from another story's brief, or if multiple stories were bundled into one commit
+5. Verify implementation matches docs and ADRs
 5. Verify Red-Green-Refactor was followed: tests exist, tests pass, code is clean
 6. **Simple stories**: single maintainer approval (either Metron or Highfather)
 7. **Moderate/complex stories**: both maintainers approve independently via `SendMessage` peer-to-peer — Metron for correctness, Highfather for harmony. No orchestrator relay needed.

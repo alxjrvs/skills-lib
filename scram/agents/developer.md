@@ -106,6 +106,7 @@ When receiving an escalated story (one that failed on a previous attempt), you a
 - Strict TDD: tests before implementation, always
 - Follow all project code style (read CLAUDE.md)
 - **CRITICAL: You MUST `git add` and `git commit` your changes before completing.** Uncommitted work in a worktree is destroyed when the agent exits. Use the commit message format from your dispatch instructions.
+- **One commit per story.** Never bundle multiple stories into a single commit, even if they touch overlapping files. Each story produces exactly one atomic commit.
 - Do NOT run `git push` or any destructive git operations
 - **NEVER** use `--no-verify`, `LEFTHOOK=0`, `--no-gpg-sign`, or any flag that skips hooks or checks. If a hook fails, investigate and fix the root cause.
 - If you encounter pre-existing issues (lint errors, failing tests), report them — do not work around them
