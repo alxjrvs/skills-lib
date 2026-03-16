@@ -1,5 +1,9 @@
 {
   "name": "scram",
   "version": "2.0.0",
-  "description": "SCRAM — Structured Collaborative Review and Merge with stream-based parallel development"
+  "description": "SCRAM — Structured Collaborative Review and Merge with stream-based parallel development",
+  "author": {
+    "name": "alxjrvs",
+    "url": "https://github.com/alxjrvs"
+  }
 }
