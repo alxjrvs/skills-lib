@@ -238,19 +238,38 @@ If the user has not provided enough context, ask clarifying questions. Required:
 - **Features to implement** (with enough detail to document)
 - **Scope boundaries** (what is NOT included)
 
-### Ask About External Tracker
+### Ask About External Tracker and Retrospective
 
-> "Do you have an external tracker for this work? (GitHub Projects, Linear, Jira, etc.) If so, provide the project/board reference and I'll keep it updated as work progresses."
+Use `AskUserQuestion` to gather setup preferences:
 
-If yes, record: tracker type, project/board identifier, and any existing issue mappings. If tracker tools aren't available (no `gh` CLI, no MCP), warn the user and fall back to manual tracking suggestions.
+```
+AskUserQuestion:
+  questions:
+    - question: "Do you have an external tracker for this work?"
+      header: "Tracker"
+      options:
+        - label: "No tracker"
+          description: "Track stories in the SCRAM backlog only"
+        - label: "GitHub Issues"
+          description: "Create and update issues on a GitHub repo"
+        - label: "Linear"
+          description: "Sync stories to a Linear project"
+        - label: "Jira"
+          description: "Sync stories to a Jira board"
+      multiSelect: false
+    - question: "Would you like a team retrospective at the end?"
+      header: "Retro"
+      options:
+        - label: "Yes (Recommended)"
+          description: "Maintainers review how the run went and suggest SCRAM improvements"
+        - label: "No"
+          description: "Skip the retrospective"
+      multiSelect: false
+```
 
-If no, skip all tracker concerns for the rest of the workflow.
+If tracker is selected, ask for the project/board reference. If tracker tools aren't available (no `gh` CLI, no MCP), warn the user and fall back to manual tracking suggestions.
 
-### Ask About Retrospective
-
-> "Would you like a team retrospective at the end? The team will review how the work went and suggest improvements to the SCRAM process itself."
-
-Record the answer. If yes, G5 runs after G4.
+Record the retrospective answer. If yes, G5 runs after G4.
 
 ### Assess Session Tier
 
@@ -293,7 +312,20 @@ Team:
   Himon (Dev Tooling, sonnet) [optional — include if feature touches CI/CD, build, or DX]
 ```
 
-Wait for user approval.
+Use `AskUserQuestion` to confirm:
+
+```
+AskUserQuestion:
+  questions:
+    - question: "Does this team roster look right?"
+      header: "Team"
+      options:
+        - label: "Approved"
+          description: "Proceed with this team"
+        - label: "Adjust"
+          description: "I want to change the team composition"
+      multiSelect: false
+```
 
 ## G1: ADRs
 
@@ -462,7 +494,20 @@ Maintainers update this file as stories progress.
 
 ### Present the Backlog
 
-Present the backlog table to the user. Wait for user approval before dispatching.
+Present the backlog table to the user. Use `AskUserQuestion` to confirm:
+
+```
+AskUserQuestion:
+  questions:
+    - question: "Ready to start the dev stream with this backlog?"
+      header: "Backlog"
+      options:
+        - label: "Start streams"
+          description: "Approve the backlog and begin dispatching stories"
+        - label: "Adjust stories"
+          description: "I want to modify stories, priorities, or dependencies"
+      multiSelect: false
+```
 
 ## Concurrent Streams (after G3)
 
@@ -744,9 +789,20 @@ The orchestrator compiles the results:
 
 ### File Issue on SCRAM Plugin Repo
 
-After presenting the retrospective, ask the user:
+After presenting the retrospective, use `AskUserQuestion`:
 
-> "Would you like me to open an issue on `alxjrvs/skills` with these retrospective results? This helps track improvements to the SCRAM plugin over time."
+```
+AskUserQuestion:
+  questions:
+    - question: "File these retro results as an issue on alxjrvs/skills?"
+      header: "File issue"
+      options:
+        - label: "Yes (Recommended)"
+          description: "Open an issue to track improvements to the SCRAM plugin"
+        - label: "No"
+          description: "Skip — results are saved in the workspace"
+      multiSelect: false
+```
 
 If yes, create a GitHub issue on `alxjrvs/skills` with:
 - **Title:** `retro: <count> consensus changes from SCRAM run`

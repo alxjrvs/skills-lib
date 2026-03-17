@@ -99,13 +99,41 @@ single_recommendation | ranked_options | exploration
 
 ### Ask About Issue Tracker
 
-> "Would you like the brainstorm results recorded to an issue tracker? (GitHub Issues, Linear, Jira, etc.) If so, provide the project/board reference."
+Use `AskUserQuestion`:
 
-If yes, record the tracker config. After Phase 5 (Present), create an issue with the final synthesized options as the body. If tracker tools aren't available, provide the formatted output for manual creation.
+```
+AskUserQuestion:
+  questions:
+    - question: "Record the brainstorm results to an issue tracker?"
+      header: "Tracker"
+      options:
+        - label: "No tracker"
+          description: "Results saved to workspace only"
+        - label: "GitHub Issues"
+          description: "Create an issue with the synthesized options"
+        - label: "Linear"
+          description: "Create a Linear issue with the results"
+      multiSelect: false
+```
+
+If tracker selected, ask for the project/board reference. If tracker tools aren't available, provide the formatted output for manual creation.
 
 ### Present the Team
 
-Present the fixed team roster. Wait for user approval.
+Present the team roster. Use `AskUserQuestion` to confirm:
+
+```
+AskUserQuestion:
+  questions:
+    - question: "Does this brainstorm team look right?"
+      header: "Team"
+      options:
+        - label: "Approved"
+          description: "Proceed with this team"
+        - label: "Adjust"
+          description: "I want to change the team composition"
+      multiSelect: false
+```
 
 ```
 Brainstorm Team:
@@ -301,9 +329,20 @@ After presenting, report the workspace path so the user can review the full deba
 
 ### Retrospective (optional)
 
-After presenting results, ask the user:
+After presenting results, use `AskUserQuestion`:
 
-> "Would you like a quick retro on how the brainstorm went? The team will reflect on what worked and what could improve in the scramstorm process."
+```
+AskUserQuestion:
+  questions:
+    - question: "Run a quick retro on how the brainstorm went?"
+      header: "Retro"
+      options:
+        - label: "Yes"
+          description: "Team reflects on what worked and what could improve"
+        - label: "No"
+          description: "Skip the retrospective"
+      multiSelect: false
+```
 
 If yes, dispatch the **core team** (Orion, Metron, Highfather, Forager) one more time. Each reads the full workspace (problem, research, positions, debate, options) and writes **one attributed reflection** answering:
 - What worked well in this brainstorm?
@@ -312,9 +351,20 @@ If yes, dispatch the **core team** (Orion, Metron, Highfather, Forager) one more
 
 The orchestrator synthesizes and presents.
 
-Then ask:
+Then use `AskUserQuestion`:
 
-> "Would you like me to open an issue on `alxjrvs/skills` with these retrospective results?"
+```
+AskUserQuestion:
+  questions:
+    - question: "File these retro results as an issue on alxjrvs/skills?"
+      header: "File issue"
+      options:
+        - label: "Yes (Recommended)"
+          description: "Open an issue to track improvements to the scramstorm skill"
+        - label: "No"
+          description: "Skip — results are saved in the workspace"
+      multiSelect: false
+```
 
 If yes, create a GitHub issue on `alxjrvs/skills` with:
 - **Title:** `retro(scramstorm): <count> suggestions from brainstorm`
