@@ -252,6 +252,29 @@ If no, skip all tracker concerns for the rest of the workflow.
 
 Record the answer. If yes, G5 runs after G4.
 
+### Assess Session Tier
+
+Evaluate the scope to determine the session tier:
+
+| Tier | Criteria | Team |
+|------|----------|------|
+| **Full** | 4+ stories, moderate/complex complexity, shared package changes, or new abstractions | Full team with persistent maintainer team |
+| **Lightweight** | ≤3 stories, all simple or verify-only, no shared package changes, no new abstractions | Single maintainer (orchestrator-only or one maintainer), no persistent team needed |
+
+For lightweight sessions, the orchestrator can handle dispatch and review directly without creating a maintainer team. Gates may be skipped per the criteria below.
+
+### Gate-Skip Criteria
+
+Gates may be skipped when their purpose is not served by the session scope. Skipping must be noted in `session.md` with a brief rationale — making it auditable.
+
+| Gate | May Skip When |
+|------|--------------|
+| G1 (ADRs) | No new architectural decisions — no new dependencies, schema changes, or abstractions |
+| G2 (Docs) | No user-facing documentation added or changed |
+| G3 (Breakdown) | Stories are already defined with briefs (e.g., from a prior scramstorm or external tracker) |
+
+**Never skip G0 or G4.** Environment validation and final review are always required.
+
 ### Present Team Roster
 
 Present the team to the user before proceeding:
@@ -349,6 +372,16 @@ Each story gets a complexity tag that determines the agent model:
 | Moderate | sonnet | Some judgment needed, moderate file scope |
 | Complex | opus | Cross-cutting, architectural judgment, ambiguous requirements |
 
+### Tag Resolution Mode
+
+Each story gets a resolution mode:
+
+| Mode | When | Handling |
+|------|------|----------|
+| `commit` | Story produces code/doc changes | Normal dev dispatch with worktree isolation |
+| `verify-only` | Story requires only verifying acceptance criteria are already met | Orchestrator handles directly — no dev dispatch, no worktree. Check criteria, update tracker, record in backlog with no commit hash. |
+| `conditional` | Story may or may not require changes depending on current state | Dev dispatched to investigate; may resolve as `verify-only` if criteria already met |
+
 ### Tag UI/UX Stories (when designer is active)
 
 If a designer is on the team, flag any story that touches user-facing elements (GUI, TUI, CLI output, interactive prompts). These stories require designer approval during the merge stream in addition to standard maintainer approval(s). The designer also contributes design context to these stories' context briefs.
@@ -415,12 +448,12 @@ Write the backlog to `SCRAM_WORKSPACE/backlog.md`:
 ```markdown
 # SCRAM Backlog — <feature-name>
 
-| # | Story | Priority | Complexity | Depends On | UI/UX | Status | Agent | Commit |
-|---|-------|----------|------------|------------|-------|--------|-------|--------|
-| 1 | Story A | P0 | simple | — | no | pending | — | — |
-| 2 | Story B | P0 | complex | — | no | pending | — | — |
-| 3 | Story C | P1 | moderate | 1, 2 | yes | pending | — | — |
-| 4 | Story D | P2 | simple | — | no | pending | — | — |
+| # | Story | Priority | Complexity | Resolution | Depends On | UI/UX | Status | Agent | Commit |
+|---|-------|----------|------------|------------|------------|-------|--------|-------|--------|
+| 1 | Story A | P0 | simple | commit | — | no | pending | — | — |
+| 2 | Story B | P0 | complex | commit | — | no | pending | — | — |
+| 3 | Story C | P1 | moderate | commit | 1, 2 | yes | pending | — | — |
+| 4 | Story D | P2 | simple | verify-only | — | no | pending | — | — |
 ```
 
 **Status values:** `pending` → `in_progress` → `in_review` → `merged` | `failed` → `escalated` → `in_progress`
@@ -538,21 +571,33 @@ Default escalation path for capability failures: sonnet → opus. If the same st
 Both maintainers are persistent teammates. As each dev agent completes:
 
 1. **Verify worktree metadata** — confirm the agent response includes `worktreePath` and `worktreeBranch`. If either is missing, the agent likely did not commit and the work is lost — flag immediately and redispatch before proceeding.
-2. The orchestrator sends the **structured Story Report** to the maintainer team via `SendMessage`
-3. Maintainers review the worktree diff against the integration branch
-4. **Verify one-commit-per-story** — reject if the diff touches files from another story's brief, or if multiple stories were bundled into one commit
-5. Verify implementation matches docs and ADRs
-5. Verify Red-Green-Refactor was followed: tests exist, tests pass, code is clean
-6. **Simple stories**: single maintainer approval (either Metron or Highfather)
-7. **Moderate/complex stories**: both maintainers approve independently via `SendMessage` peer-to-peer — Metron for correctness, Highfather for harmony. No orchestrator relay needed.
-8. **UI/UX stories** (when designer is active): designer approval required **in addition to** maintainer approval(s)
-9. Maintainers notify the orchestrator of the decision. The orchestrator executes the merge into the integration branch (one atomic commit per story).
-10. Run full test suite after merge
-11. Update `SCRAM_WORKSPACE/backlog.md` — set status to `merged`, record commit hash
-12. Update `SCRAM_WORKSPACE/session.md` — move story to Merged Stories, update timestamp
-13. Update tracker if configured
+2. **Verify isolation** — confirm the commit was made in the worktree on the correct story branch, NOT on the integration branch or main repo. If the agent committed on the wrong branch, see Cherry-Pick Fallback below.
+3. The orchestrator sends the **structured Story Report** to the maintainer team via `SendMessage`
+4. Maintainers review the worktree diff against the integration branch
+5. **Scope check** — verify the changed file list matches the story brief's `## Deliverables` section. Any out-of-scope file path is an automatic rejection. This catches cross-story contamination from concurrent agents.
+6. **Verify one-commit-per-story** — reject if multiple stories were bundled into one commit
+7. **Diff direction** — before rendering a verdict, the reviewer must state the diff direction: "This diff removes X and adds Y." For rejections, paste the specific diff lines that are incorrect.
+8. Verify implementation matches docs and ADRs
+9. Verify Red-Green-Refactor was followed: tests exist, tests pass, code is clean (for `run_type: docs`, verify with build/lint instead)
+10. **Lint/export check** — if the story adds or modifies exports, run Knip or equivalent dead-export detection before approving
+11. **Simple stories**: single maintainer approval (either Metron or Highfather)
+12. **Moderate/complex stories**: both maintainers approve independently via `SendMessage` peer-to-peer — Metron for correctness, Highfather for harmony. No orchestrator relay needed.
+13. **UI/UX stories** (when designer is active): designer approval required **in addition to** maintainer approval(s)
+14. Maintainers notify the orchestrator of the decision. The orchestrator executes the merge into the integration branch (one atomic commit per story).
+15. **Post-merge typecheck** — run `bun run typecheck` (or equivalent) from the repo root against the integration branch after merge. Worktree typecheck is necessary but not sufficient — downstream consumers may only exist on the integration branch. Pre-push hooks are a safety net, not a substitute.
+16. Run full test suite after merge
+17. Update `SCRAM_WORKSPACE/backlog.md` — set status to `merged`, record commit hash
+18. Update `SCRAM_WORKSPACE/session.md` — move story to Merged Stories, update timestamp
+19. Update tracker if configured
 
-**If tests fail after merge:** Revert immediately. Write `HALT` file to SCRAM workspace. Update backlog status to `failed`. Do NOT merge further stories until integration branch is green and `HALT` is removed.
+**If tests or typecheck fail after merge:** Revert immediately. Write `HALT` file to SCRAM workspace. Update backlog status to `failed`. Do NOT merge further stories until integration branch is green and `HALT` is removed.
+
+**Cherry-Pick Fallback (last resort):**
+When worktree isolation fails and an agent commits on the wrong branch, cherry-picking to the integration branch is permitted only if BOTH conditions are met:
+1. The commit's changed file list exactly matches the story brief's deliverables
+2. The commit originates from a branch created from the integration branch (not main or another story branch)
+
+This is a recovery mechanism, not a normal workflow. If cherry-pick conditions are not met, redispatch the story.
 
 **Conflict resolution:**
 - Trivial (imports, adjacent edits): resolve in integration branch

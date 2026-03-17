@@ -51,7 +51,12 @@ When assigned a story (including escalated stories that failed on a previous att
    git checkout -b <integration-branch>/<story-slug>
    ```
    The integration branch name is provided in your dispatch prompt. **NEVER work directly on `main`.**
-2. **Pre-flight check** — before writing any code, verify:
+2. **Isolation Contract** — before making ANY file modifications, verify all three:
+   - `pwd` is within your assigned worktree path (not the main repo)
+   - `git branch --show-current` matches your story branch (`<integration-branch>/<story-slug>`)
+   - `git status` shows no untracked files from other stories
+   If ANY check fails, **STOP and report to the orchestrator**. Do not proceed. Do not commit on the integration branch directly.
+3. **Pre-flight check** — before writing any code, verify:
    - You are on the correct branch (a new branch created from the integration branch, NOT from `main`)
    - The context brief file exists at `SCRAM_WORKSPACE/briefs/<story-slug>.md`
    - The referenced doc section exists
