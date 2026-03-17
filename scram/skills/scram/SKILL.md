@@ -14,11 +14,11 @@ SCRAM uses **5 sequential gates** (plus an optional retrospective) and **3 concu
 
 | Role | Count | Default Model | Flex To | Agent (`subagent_type`) | Responsibility |
 |------|-------|---------------|---------|-------------------------|----------------|
-| Developer | 1-5 | sonnet | opus | `scram:developer` | Doc review, story breakdown, context briefs, TDD implementation, escalation handling |
+| Developer | 1-5 | sonnet | opus | `scram:developer` | Doc review, story breakdown, context briefs, TDD implementation, escalation handling (max 5) |
 | Merge Maintainer | 1 | sonnet | (fixed) | `scram:merge-maintainer` | Line-level code review, story strictness, TDD discipline, scope enforcement |
 | Code Maintainer | 1 | sonnet | (fixed) | `scram:code-maintainer` | Structural harmony, DRYness, codebase-wide patterns, architectural drift |
-| Doc Specialist | 1-3 | sonnet | (fixed) | `scram:doc-specialist` | Docs-as-spec, incremental refinement |
-| Designer | 0-1 | sonnet | opus | `scram:designer` | Design ADRs, required UI/UX merge approver (optional role) |
+| Doc Specialist | 1-3 | sonnet | (fixed) | `scram:doc-specialist` | ADR authoring, docs-as-spec, incremental refinement (max 3, spun up as needed) |
+| Designer | 0-3 | sonnet | opus | `scram:designer` | Design ADRs, required UI/UX merge approver (optional, max 3, spun up as needed) |
 | Dev Tooling Maintainer | 0-1 | sonnet | (fixed) | `scram:dev-tooling-maintainer` | CI/CD, build systems, agentic integrations, DX (optional role) |
 | Orchestrator | 1 (you) | — | — | — | Gate coordination, agent dispatch on behalf of merge maintainers, reporting to user |
 
@@ -278,9 +278,16 @@ Evaluate the scope to determine the session tier:
 | Tier | Criteria | Team |
 |------|----------|------|
 | **Full** | 4+ stories, moderate/complex complexity, shared package changes, or new abstractions | Full team with persistent maintainer team |
-| **Lightweight** | ≤3 stories, all simple or verify-only, no shared package changes, no new abstractions | Single maintainer (orchestrator-only or one maintainer), no persistent team needed |
+| **Lightweight** | ≤3 stories, all simple or verify-only, no shared package changes, no new abstractions | Single maintainer, no persistent team needed |
 
-For lightweight sessions, the orchestrator can handle dispatch and review directly without creating a maintainer team. Gates may be skipped per the criteria below.
+For lightweight sessions, a single maintainer handles review. The orchestrator **must not merge directly** — even lightweight sessions require an explicit review checklist:
+- [ ] Acceptance criteria checked against story brief
+- [ ] Diff reviewed for scope compliance
+- [ ] Tests/build passing after merge
+
+Record the checklist outcome in `session.md`. A SCRAM run without a merge review is not a SCRAM run.
+
+**Process discipline:** Gates and role assignments apply to all SCRAM runs regardless of content type, perceived simplicity, or time pressure. If full SCRAM is disproportionate for the scope, use a different process — not a degraded SCRAM.
 
 ### Gate-Skip Criteria
 
@@ -841,8 +848,8 @@ The user can continue in a fresh session. The new orchestrator will find the wor
 
 ## Constraints
 
-- All dev agents dispatched with `isolation: "worktree"`
-- All developers use strict TDD — tests before implementation
+- All dev agents dispatched with `isolation: "worktree"` — worktree isolation is non-negotiable, even for simple stories
+- All developers use strict TDD — tests before implementation. For content-only stories (no executable tests), use the substitute discipline: (1) establish a schema or validation contract, (2) validate content against it, (3) human-readable diff review against prior version
 - Never skip hooks or force-push
 - New commits only — never amend
 - One atomic commit per story
@@ -851,3 +858,6 @@ The user can continue in a fresh session. The new orchestrator will find the wor
 - All agents must use their defined structured report format
 - Backlog and context briefs are files in the SCRAM workspace, not inline context
 - SCRAM workspace is outside the project repo — never committed to git
+- **G2 doc work MUST use `scram:doc-specialist` agents** — developers may not substitute for doc specialists at G2
+- **External service work** — when agents update external services via API (not git-tracked files), use the staging pattern: write proposed content to local files in the worktree first, maintainers review those files as a diff, only after approval does a final step push to the external service. This preserves the review gate for side-effectful work.
+- **Co-Authored-By for proxy commits** — when the orchestrator commits on behalf of another agent, include a `Co-Authored-By` line for the producing agent (name + model) to preserve authorship in git history

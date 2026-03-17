@@ -76,6 +76,7 @@ Gather the problem from the user. Ask clarifying questions until you have:
 - **Problem statement** — what needs to be solved, decided, or understood?
 - **Constraints** — what's off the table? (time, budget, tech stack, backwards compat, etc.)
 - **Context** — what has already been tried or considered?
+- **Task frequency audit** — before generating options, identify the 5-10 most common tasks agents are dispatched to perform in the target codebase. Options should be scored against this list. Without it, brainstorms optimize for elegance rather than actual failure modes.
 - **Desired outcome** — does the user want a single recommendation, ranked options, or an exploration of the space?
 
 Write the framed problem to `BRAINSTORM_WORKSPACE/problem.md`:
@@ -153,6 +154,8 @@ Dispatch **all team members in parallel**. Each agent receives:
 - Instructions to research from their role's perspective
 - The codebase context (they can read files, search code, explore patterns)
 
+**Mandatory evidence pass:** Before voicing any opinion on a codebase problem, each agent must perform at minimum 5 specific file reads that ground their claims in what the code actually says. No estimates, risk ratings, or quantitative claims (e.g., "N services are missing X") without a search to confirm the number. Research output must cite file paths for every structural claim.
+
 Each agent writes their findings to `BRAINSTORM_WORKSPACE/research/<agent-name>.md`. **Research is not anonymous** — each agent brings a distinct lens shaped by their personality:
 
 - **Orion** explores: the most direct path to a solution, what's blocking progress, which approaches have the fewest moving parts, what can be torn down and rebuilt simply
@@ -198,6 +201,10 @@ Position format:
 ## How It Works
 <detailed explanation of the approach — what changes, what stays the same, how the pieces fit>
 
+## Key Assumptions (that could be wrong)
+- <load-bearing assumption 1>
+- <load-bearing assumption 2>
+
 ## Trade-offs
 - **Pros:** <list>
 - **Cons:** <list>
@@ -214,6 +221,8 @@ low | moderate | high | very_high
 
 Agents may propose the same approach as another agent — that's signal, not redundancy. Different framings of the same idea add nuance.
 
+**State contract requirement:** If the brainstorm touches async state machines, queues, or event-driven systems, each position must declare what state each entity is in after the proposed change runs under the named failure scenario. This surfaces incompatible state assumptions before debate.
+
 ## Phase 4: Debate (2 rounds)
 
 ### Round 1: React and Challenge
@@ -225,11 +234,19 @@ Dispatch **all agents**. Each reads all position papers and responds:
 
 Each agent's Round 1 response is **attributed** (not anonymous) — team members should know who is challenging what so they can respond. Responses are collected into `BRAINSTORM_WORKSPACE/debate/round-1.md`.
 
+### Between Rounds: Orchestrator Synthesis
+
+Before dispatching Round 2, the orchestrator performs two steps:
+
+1. **Resolved list** — summarize questions already answered in Round 1 and mark them closed. Distribute to all agents with Round 2 dispatch. This prevents re-litigating settled questions.
+2. **Steward synthesis** — Highfather (or the steward role) writes a short (5-10 line) note naming the cross-cutting dependencies and open decisions surfaced in Round 1. This is distributed to all agents as shared premises for Round 2.
+
 ### Round 2: Converge
 
-Dispatch **all agents** with Round 1 responses. Each agent:
-- Reads all challenges and refinements
+Dispatch **all agents** with Round 1 responses, the resolved list, and the steward synthesis. Each agent:
+- Reads all challenges, refinements, and the resolved/synthesis notes
 - Updates their support — they may switch positions based on new arguments
+- **Dependency check** — explicitly state whether their position can ship independently or requires another fix to land first, and why
 - Identifies where consensus is forming vs. where genuine disagreement remains
 - If they see a synthesis that combines the best of multiple positions, they propose it
 
@@ -314,7 +331,8 @@ The orchestrator synthesizes the debate into structured options. Write to `BRAIN
 <where the team genuinely disagreed and why — these are real trade-offs, not resolvable by more discussion>
 
 ### Open Questions
-<things the team couldn't resolve — may need prototyping, user research, or external input>
+Each open question must include a **named decision owner** and a **resolution trigger** (deadline, blocker, or escalation condition). Open questions without owners are organizational debt. If the brainstorm cannot name an owner, flag the question as a blocker on the relevant option.
+- <question> — **Owner:** <who decides> — **Resolve by:** <trigger>
 ```
 
 ### Record ADRs
