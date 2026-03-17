@@ -121,7 +121,20 @@ If tracker selected, ask for the project/board reference. If tracker tools aren'
 
 ### Present the Team
 
-Present the team roster. Use `AskUserQuestion` to confirm:
+**Always display the team roster as plain text first**, then ask for confirmation. The user must see the full composition before approving.
+
+```
+Brainstorm Team:
+  Orion (Dev, sonnet) — the challenger
+  Metron (Merge Maintainer, sonnet) — the analyst
+  Highfather (Code Maintainer, sonnet) — the steward
+  Forager (Dev, sonnet) — the pragmatist
+  [Beautiful Dreamer (Doc Specialist, sonnet) — the advocate]     [if applicable]
+  [Scott Free (Dev, sonnet) — the escapist]                       [if applicable]
+  [Himon (Dev Tooling, sonnet) — the toolsmith]                   [if applicable]
+```
+
+Then use `AskUserQuestion` to confirm:
 
 ```
 AskUserQuestion:
@@ -134,17 +147,6 @@ AskUserQuestion:
         - label: "Adjust"
           description: "I want to change the team composition"
       multiSelect: false
-```
-
-```
-Brainstorm Team:
-  Orion (Dev, sonnet) — the challenger
-  Metron (Merge Maintainer, sonnet) — the analyst
-  Highfather (Code Maintainer, sonnet) — the steward
-  Forager (Dev, sonnet) — the pragmatist
-  [Beautiful Dreamer (Doc Specialist, sonnet) — the advocate]     [if applicable]
-  [Scott Free (Dev, sonnet) — the escapist]                       [if applicable]
-  [Himon (Dev Tooling, sonnet) — the toolsmith]                   [if applicable]
 ```
 
 ## Phase 2: Research (parallel)

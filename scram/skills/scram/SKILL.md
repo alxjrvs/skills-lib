@@ -303,7 +303,7 @@ Gates may be skipped when their purpose is not served by the session scope. Skip
 
 ### Present Team Roster
 
-Present the team to the user before proceeding:
+**Always display the team roster as plain text first**, then ask for confirmation. The user must see the full composition before approving.
 
 ```
 Team:
@@ -319,7 +319,7 @@ Team:
   Himon (Dev Tooling, sonnet) [optional — include if feature touches CI/CD, build, or DX]
 ```
 
-Use `AskUserQuestion` to confirm:
+Then use `AskUserQuestion` to confirm:
 
 ```
 AskUserQuestion:
