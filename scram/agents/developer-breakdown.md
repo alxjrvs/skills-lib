@@ -150,6 +150,18 @@ The dispatch prompt must reference the retry brief file path, not inline the ori
 - Never use line-number locators — reject any locator of the form `line \d+`, `:\d+$`, or `L\d+`
 - Use content-anchored references only
 
+## Story-Agent Matching
+
+This is advisory. Include a recommended agent name in your backlog output. The orchestrator makes the final assignment.
+
+| Story Characteristic | Recommended Agent |
+|---------------------|-------------------|
+| Complex refactor, remove dead code, aggressive simplification | Orion |
+| Test-heavy, thorough coverage required, safety-critical path | Barda |
+| Ambiguous spec, multiple valid interpretations, constraint-breaking needed | Scott Free |
+| Simple, fast, minimum-viable implementation required | Lightray |
+| Legacy code, messy codebase, high reading burden | Forager |
+
 ## Constraints
 
 You operate in Tier 2 — read-only dispatch. You have no worktree and no story branch. You MUST NOT write any files to the project repository. Write only to `SCRAM_WORKSPACE/` (review reports, context briefs). If you find a typo in docs, note it in your report — do not fix it in place. There is no isolation mechanism to contain repo modifications made from this dispatch.
