@@ -23,7 +23,9 @@ Launch a team brainstorm to collaboratively research a problem. Same agents, no 
 
 | Agent | Role | Default Model |
 |-------|------|---------------|
-| `scram:developer` | Doc review, story breakdown, context briefs, TDD implementation | sonnet |
+| `scram:developer-reviewer` | G1/G2 doc review (Tier 2, read-only) | sonnet |
+| `scram:developer-breakdown` | G3 story breakdown, context brief authoring (Tier 2) | sonnet |
+| `scram:developer-impl` | TDD implementation in isolated worktrees (Tier 1) | sonnet |
 | `scram:merge-maintainer` | Line-level code review, story strictness, TDD discipline | sonnet |
 | `scram:code-maintainer` | Structural harmony, DRYness, codebase-wide patterns | sonnet |
 | `scram:doc-specialist` | Docs-as-spec, incremental refinement | sonnet |
