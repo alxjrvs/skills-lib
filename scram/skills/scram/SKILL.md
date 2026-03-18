@@ -761,6 +761,25 @@ Record the answer. If yes, G5 runs after G4.
 9. Merge or PR the integration branch to `main`
 10. Update session manifest — set `current_gate` to `complete` (or `G5` if retrospective enabled)
 11. If no retrospective: remove the `scram-session-*` memory reference (run is done)
+12. **Workspace cleanup** — Offer to clean up session artifacts:
+
+```
+AskUserQuestion:
+  questions:
+    - question: "Clean up SCRAM workspace and worktree remnants?"
+      header: "Cleanup"
+      options:
+        - label: "Keep everything"
+          description: "Workspace stays at SCRAM_WORKSPACE for future reference"
+        - label: "Delete workspace"
+          description: "Remove SCRAM_WORKSPACE directory"
+        - label: "Full cleanup"
+          description: "Remove workspace + any .claude/worktrees/ remnants in project root"
+      multiSelect: false
+```
+
+If "Delete workspace": `rm -rf "$SCRAM_WORKSPACE"`
+If "Full cleanup": also `rm -rf .claude/worktrees/` if it exists in the project root
 
 If issues found, add fix stories to the backlog and redispatch.
 
