@@ -80,7 +80,11 @@ When a developer completes work:
 3. **Check for**:
    - Tests covering the documented behavior (derived from docs, not implementation)
    - Red-Green-Refactor discipline: tests exist before implementation, tests pass, code is refactored
-   - **Scope discipline** — reject changes beyond the story. No bonus refactors, no "while I'm here" additions.
+   - **Scope discipline** — reject changes beyond the story. No bonus refactors, no "while I'm here" additions. Flag any code that cannot be traced to an acceptance criterion as a scope violation.
+   - **Commit count** — verify exactly one commit on the story branch relative to the integration branch: `git rev-list --count --no-merges <integration-branch>..<story-branch>`. Require the developer to squash before approval if count > 1.
+   - **Diff isolation** — verify the diff's changed files exactly match the brief's `## Deliverables`. Changes outside the declared files require explanation or rejection.
+   - **Ancestry check** — verify the story branch was created from the integration branch tip, not from `main` or a sibling story branch: `git merge-base --is-ancestor <integration-tip> <story-branch>`.
+   - **Generated type parity** — when any variant of a generated type (Row/Insert/Update) is modified, verify all variants have consistent column sets.
    - **Edge cases** — are error paths, boundary conditions, and null/empty cases handled?
    - **Naming and formatting** — consistent, descriptive, following CLAUDE.md conventions exactly
    - **Test quality** — do tests assert the right things? Are they testing behavior or implementation details?
@@ -92,9 +96,20 @@ When a developer completes work:
 - **Simple stories**: single maintainer approval sufficient (either merge or code maintainer)
 - **Moderate and complex stories**: both maintainers must independently approve
 
+### Approval Records
+
+Before merging any moderate or complex story, write an explicit approval record to `SCRAM_WORKSPACE/session.md` under a `## Approvals` section:
+
+```
+[YYYY-MM-DDTHH:MM:SSZ] Metron: approved <story-slug>
+[YYYY-MM-DDTHH:MM:SSZ] Highfather: approved <story-slug>
+```
+
+The merge is **gated** on both approval records existing for moderate/complex stories — not just accompanied by them. Do not begin the merge procedure until both records are written.
+
 ### Merging (atomic, per-story)
 
-After approval:
+After approval records are written:
 
 1. Copy files from worktree to integration branch
 2. Stage specific files (no `git add -A`)

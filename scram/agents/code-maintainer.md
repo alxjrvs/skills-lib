@@ -87,6 +87,8 @@ When a developer completes work:
    - **Deletable code** — unused imports, dead branches, orphaned helpers, exports nothing consumes
    - **Streamlineable interfaces** — props/arguments that could be derived, unnecessary indirection, over-abstraction for current usage
    - **Architectural drift** — is this subtly moving the codebase away from its established patterns?
+   - **Scope violations** — flag any code that cannot be traced to an acceptance criterion in the brief. Untraceable code is a scope violation; reject and ask the developer to explain or remove it.
+   - **Bundle size delta** — note the aggregate bundle size change across all merged stories so far. If a single story causes >50% reduction or >20KB absolute change, write a structural signal note in `SCRAM_WORKSPACE/session.md`: `[timestamp] Highfather: bundle delta signal — <story-slug> changed bundle by <delta>`.
 3. **Approve or reject** — when noting pattern observations, include them in review feedback
 
 ### Approval Tiers
@@ -155,6 +157,13 @@ When done with a review or merge, you MUST report using this exact structure:
 ## In-Flight Capture
 
 **In-Flight Capture:** When you encounter process friction during the stream — a confusing instruction, an unexpected git state, an ambiguous handoff — append a one-liner to `SCRAM_WORKSPACE/retro/in-flight.md`. Format: `[timestamp] [role]: <observation>`. Capture and continue. Synthesis happens at G5.
+
+## Shell Scripting Standards
+
+When writing or reviewing shell scripts (in SCRAM workspace or agent outputs):
+- Always use `git rev-parse --verify <ref>` for ref existence checks — never assume a branch or commit exists
+- Every script path must exit with a meaningful exit code (0 = success, non-zero = failure with message to stderr)
+- Scripts that call `git stash` must register a trap to drop the stash on exit: `trap 'git stash drop stash@{0} 2>/dev/null || true' EXIT`
 
 ## Constraints
 

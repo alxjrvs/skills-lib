@@ -75,7 +75,8 @@ SCRAM persists state in a **global workspace directory** outside the project rep
     │   │   └── highfather.md
     │   └── discussions/
     │       └── <topic-slug>.md # consensus discussion outputs
-    └── events/                 # reserved for future use
+    └── events/
+    │   └── stream.log          # checkpoint event log — one JSON line per Stop hook invocation
 ```
 
 **Workspace path construction** (at G0):
@@ -94,6 +95,8 @@ The workspace path is determined at G0 and passed to all agents as an **absolute
 
 The workspace is cleaned up at the user's discretion after the SCRAM run. The orchestrator reports the workspace path in the final summary.
 
+**Resuming a session:** Read `session.md` to restore state. Also read the last 5 lines of `events/stream.log` (if it exists) to understand the most recent activity before context was lost. This gives a mechanical checkpoint trace that supplements the prose state in `session.md`.
+
 ### Session Manifest
 
 The session manifest (`SCRAM_WORKSPACE/session.md`) is the single file needed to resume a SCRAM run. It is written at G0 and **updated after every gate transition and every story merge**. Format:
@@ -107,6 +110,7 @@ workspace: <absolute SCRAM_WORKSPACE path>
 current_gate: G0 | G1 | G2 | G3 | streams | G4 | G5 | complete
 run_type: code | docs | mixed
 retrospective: pending | true | false
+# retrospective transitions: set to "pending" at G0; resolve to "true" (opted in) or "false" (opted out) at G4 after the user prompt; never resolve during the stream phase
 prior_brainstorm: <absolute path to brainstorm workspace, or "none">
 compressed_gates: <comma-separated list of skipped gates, e.g. "G1, G2", or "none">
 tracker: <tracker config or "none">
@@ -221,7 +225,19 @@ Resume an existing session, or start fresh?
 
 ### New Session Setup
 
+**Stash check precondition:** Before creating the integration branch or workspace, verify no stashes exist:
+```bash
+git stash list
+```
+If stashes exist, stop and notify the user. Do not proceed until the user explicitly clears or acknowledges existing stashes. Starting a SCRAM run with stashes present risks accidental loss during G4 teardown.
+
 Both maintainers run environment checks and create the integration branch per their agent definitions. The orchestrator creates the SCRAM workspace using `scram-init.sh` and writes the session manifest.
+
+**Gate-boundary events:** Write a JSON event to `SCRAM_WORKSPACE/events/stream.log` at each gate transition:
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"type\":\"gate\",\"gate\":\"G1\"}" >> "$SCRAM_WORKSPACE/events/stream.log"
+```
+The `session-checkpoint.sh` Stop hook appends checkpoint events automatically between gate transitions.
 
 ### Gather Requirements
 
@@ -296,6 +312,17 @@ Evaluate the scope to determine the session tier:
 |------|----------|------|
 | **Full** | 4+ stories, moderate/complex complexity, shared package changes, or new abstractions | Full team with persistent maintainer team |
 | **Lightweight** | ≤3 stories, all simple or verify-only, no shared package changes, no new abstractions | Single maintainer, no persistent team needed |
+| **Quick** | 1 story, verify-only or trivially isolated, no new files, no shared state changes | Orchestrator handles directly — no dev dispatch, no maintainer team |
+| **Nano** | 1 story, ≤2 files modified, no new abstractions, no concurrent streams | Abbreviated flow: G0 preconditions + single one-shot dev + G4 review only |
+
+**Quick tier:** The orchestrator directly verifies acceptance criteria (no dev dispatch). Record outcome in `session.md` with an inline checklist:
+- [ ] Criteria verified: <specific AC>
+- [ ] No changes required OR changes confirmed in-place
+- [ ] Session manifest updated
+
+**Nano tier:** G1/G2/G3 are skipped by default. Use `scram/nano/<story-slug>` as the feature branch (no separate integration branch). Dispatch a single `scram:developer-impl` one-shot. G4 review is always required (never skip). If scope exceeds ≤2 files mid-run, escalate to Lightweight — write the escalation to `session.md` and ask the user before continuing.
+
+**Nano workspace:** `scram-init.sh --nano` (or manual) creates a minimal workspace: `session.md` and `events/` only. No `briefs/` or `retro/` directories needed for Nano.
 
 For lightweight sessions, a single maintainer handles review. The orchestrator **must not merge directly** — even lightweight sessions require an explicit review checklist:
 - [ ] Acceptance criteria checked against story brief
@@ -440,6 +467,12 @@ Dispatch `scram:developer-breakdown` without worktree isolation — Tier 2 dispa
 ## Doc Section
 <reference to the approved doc section this story maps to>
 
+## Budget
+`tight | standard | open`
+
+## Scope Fence
+<For contested-file stories: explicit declaration of which sections/files are OUT OF SCOPE. Leave blank if no contested files.>
+
 ## Files
 - <file path> — <why it's relevant>
 
@@ -452,7 +485,14 @@ Use content-stable grep anchors to identify locations in files. **Never use line
 - <key type/interface signatures>
 
 ## Dependencies
+### Code dependencies
 - <stories this depends on, and whether they're merged>
+
+### Structural dependencies
+- <brief-to-brief format dependencies; merge order constraints>
+
+## Hook Constraint Check
+Can this story pass pre-commit hooks independently? Yes / No — <explain if No>
 
 ## Architecture
 <summary of relevant architecture and relevant ADRs from G1>
@@ -592,27 +632,31 @@ If the script is unavailable, run manually:
 
 The `worktree-init.sh` script enforces isolation mechanically — it verifies the agent is in a worktree (not the main repo), confirms the worktree is based on the integration branch, creates the story branch, and verifies HEAD. It exits non-zero with a clear error on any check failure, preventing agents from committing to the wrong branch.
 
-Each agent receives in its dispatch prompt:
-- Story ID and description with acceptance criteria
+**Thin orchestrator discipline:** Pass paths, not contents. Each agent dispatch includes:
+- Story ID and slug
 - SCRAM workspace path (absolute)
-- Context brief file path (`SCRAM_WORKSPACE/briefs/<story-slug>.md`)
-- Doc section reference
+- Context brief file path (`SCRAM_WORKSPACE/briefs/<story-slug>.md`) — the agent reads this from disk
 - **Integration branch name** — the agent MUST branch from this, not from `main`
 - The checkout instructions above
 
-Dispatch `scram:developer-impl` with the context brief — the agent follows its TDD discipline as defined in its agent file.
+Do not embed brief contents, doc sections, or file contents inline in the dispatch prompt. Agents read their own context from disk. This prevents context bloat and ensures agents work from current disk state rather than stale embedded snapshots.
+
+Dispatch `scram:developer-impl` with the context brief path — the agent follows its TDD discipline as defined in its agent file.
 
 **Dispatch rules:**
 - **P0 stories run first as a separate wave** with a quality gate before P1+ begins. This gates complex work on a proven baseline.
 - Max **5 concurrent dev agents**
 - Each agent works **one story at a time**, completing all three phases
-- **Do not dispatch a story whose `Depends On` column has unmerged stories** — check backlog status first
+- **Do not dispatch a story whose `Depends On` column has unmerged stories** — check backlog status first. Dependency must be merged into the integration branch before the dependent story is dispatched.
+- **Verify branch name convention before dispatch** — the story slug must produce a branch name following `scram/<feature>/<story-slug>`. If the branch already exists (prior rejected attempt), do not reuse it — the dev agent will create a fresh branch from integration tip.
 - **Stories with migrations serialize** — do not parallelize stories that include migrations touching the same tables
 - Use the model matching the story's complexity tag
 - Agents return a **structured Story Report** (including branch name and commit SHA) to the maintainers when complete
 - Pull-based: as an agent finishes, maintainers dispatch the next story from the backlog
 
-**Contested files:** During G3 backlog construction, identify stories that touch the same files. Add a `Contested Files` note. Same-file stories should be assigned to the same agent or given explicit merge-order annotations to avoid conflicts.
+**Contested files:** During G3 backlog construction, identify stories that touch the same files. Add a `Contested Files` note and populate the story's `## Scope Fence` section in its brief. Same-file stories should be assigned to the same agent or given explicit merge-order annotations in the brief's `## Dependencies` section to avoid conflicts.
+
+**Hook constraint audit (G3):** For each story, confirm it can pass pre-commit hooks independently without relying on changes from sibling stories. The export-before-deletion ordering is a named anti-pattern: if story A removes an export that story B depends on, story B must be fully merged before story A is dispatched. Record this in both stories' `## Dependencies` sections.
 
 **Escalation on failure (using failure taxonomy):**
 
@@ -636,6 +680,10 @@ Default escalation path for capability failures: sonnet → opus. **If the same 
 
 **Attempted:** <what was tried>
 **Failed because:** <root cause>
+**Checkpoint type:** human-verify | decision | human-action
+  - `human-verify` — read and confirm, no action required from you
+  - `decision` — choose between the options below
+  - `human-action` — you need to perform an action before the run can continue
 **Decision needed:** <closed question with specific options>
 **Options:**
 1. <option A> — <consequence>
@@ -650,6 +698,8 @@ Both maintainers are persistent teammates. As each dev agent completes:
 Dispatch Metron with the Story Report. Metron performs pre-review git health checks, dual-approval coordination, and merge execution per its agent definition.
 
 **If tests or typecheck fail after merge:** Revert immediately. Write `HALT` file to SCRAM workspace. Update backlog status to `failed`. Do NOT merge further stories until integration branch is green and `HALT` is removed.
+
+**Rejected branch lifecycle:** When a story is rejected, abandon the branch — do not amend it, cherry-pick from it, or redispatch into it. Write a retry brief (`briefs/<slug>-retry-<n>.md`) documenting removed scope and changed ACs. Redispatch always branches fresh from the current integration branch tip. Maintainers verify diff isolation during review: the story's diff must exactly match the brief's `## Deliverables` with no ancestry contamination from sibling branches.
 
 **Cherry-Pick Fallback (last resort):**
 When worktree isolation fails and an agent commits on the wrong branch, cherry-picking to the integration branch is permitted only if BOTH conditions are met:
@@ -683,7 +733,8 @@ After all three streams complete:
 4. Run full test suite one final time
 5. Verify docs and ADRs accurately reflect the final implementation
 6. Verify `SCRAM_WORKSPACE/backlog.md` shows all stories as `merged`
-7. Close remaining tracker issues (if configured), add summary comment
+7. **Stash cleanup:** Run `git stash list`. If any stashes exist, notify the user with stash details and offer to drop them. Do not silently drop stashes — they may contain user work.
+8. Close remaining tracker issues (if configured), add summary comment
 8. Ask the user about a retrospective now that they have seen the completed work:
 
 ```
@@ -756,5 +807,6 @@ The user can continue in a fresh session. The new orchestrator will find the wor
 - New commits only — never amend
 - One atomic commit per story
 - SCRAM workspace is outside the project repo — never committed to git
+- **Post-merge fixes go through story lifecycle** — no informal patches on the integration branch. Any defect discovered post-merge requires a backlog entry, context brief, and clean commit through normal dispatch. This preserves the one-commit-per-story invariant and ensures dual-approval is never bypassed.
 - **G2 doc work MUST use `scram:doc-specialist` agents** — developers may not substitute for doc specialists at G2
 - **External service work** — when agents update external services via API (not git-tracked files), use the staging pattern: write proposed content to local files in the worktree first, maintainers review those files as a diff, only after approval does a final step push to the external service. This preserves the review gate for side-effectful work.
