@@ -625,25 +625,13 @@ If a maintainer's session dies mid-stream (context exhaustion, crash):
 
 `scram:developer-impl` agents are **always one-shot** with `isolation: "worktree"`. They are NOT team members. The orchestrator dispatches them directly via the `Agent` tool — on maintainer instruction via SendMessage or task state.
 
-**CRITICAL: When dispatching dev agents, the orchestrator MUST include explicit instructions to `git checkout` the integration branch before starting work.** The `isolation: "worktree"` parameter creates a worktree but may default to branching from `main` or HEAD. The agent's prompt must include:
-
-```
-IMPORTANT: Before starting any work, run:
-  ${CLAUDE_PLUGIN_ROOT}/scripts/worktree-init.sh scram/<feature-name> <story-slug>
-This verifies worktree isolation and creates the story branch from the integration branch.
-If the script is unavailable, run manually:
-  git checkout scram/<feature-name>
-  git checkout -b scram/<feature-name>/<story-slug>
-```
-
-The `worktree-init.sh` script enforces isolation mechanically — it verifies the agent is in a worktree (not the main repo), confirms the worktree is based on the integration branch, creates the story branch, and verifies HEAD. It exits non-zero with a clear error on any check failure, preventing agents from committing to the wrong branch.
+The dev agent runs `worktree-init.sh` per its agent definition (`scram/agents/developer-impl.md`). A `PostToolUse` hook on Agent provides a mechanical backstop — verifying worktree isolation after each dev dispatch and writing a HALT file if a violation is detected.
 
 **Thin orchestrator discipline:** Pass paths, not contents. Each agent dispatch includes:
 - Story ID and slug
 - SCRAM workspace path (absolute)
 - Context brief file path (`SCRAM_WORKSPACE/briefs/<story-slug>.md`) — the agent reads this from disk
 - **Integration branch name** — the agent MUST branch from this, not from `main`
-- The checkout instructions above
 
 Do not embed brief contents, doc sections, or file contents inline in the dispatch prompt. Agents read their own context from disk. This prevents context bloat and ensures agents work from current disk state rather than stale embedded snapshots.
 
