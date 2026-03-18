@@ -74,6 +74,7 @@ When doc specialists complete the feature documentation:
 
 When a developer completes work:
 
+0. **Run pre-merge check** — execute `${CLAUDE_PLUGIN_ROOT}/scripts/pre-merge-check.sh <branch> <sha> <integration-branch>` and verify it passes before proceeding with review
 1. **Read the diff** — review every changed line in the worktree against the integration branch
 2. **Verify against docs and ADRs** — does the implementation satisfy every acceptance criterion exactly?
 3. **Check for**:
