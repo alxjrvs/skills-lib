@@ -107,6 +107,8 @@ workspace: <absolute SCRAM_WORKSPACE path>
 current_gate: G0 | G1 | G2 | G3 | streams | G4 | G5 | complete
 run_type: code | docs | mixed
 retrospective: true | false
+prior_brainstorm: <absolute path to brainstorm workspace, or "none">
+compressed_gates: <comma-separated list of skipped gates, e.g. "G1, G2", or "none">
 tracker: <tracker config or "none">
 created: <YYYY-MM-DD HH:MM:SS>
 updated: <YYYY-MM-DD HH:MM:SS>
@@ -226,6 +228,42 @@ Both maintainers run environment checks and create the integration branch per th
 If the user has not provided enough context, ask clarifying questions. Required:
 - **Features to implement** (with enough detail to document)
 - **Scope boundaries** (what is NOT included)
+
+### Check for Prior Scramstorm
+
+Use `AskUserQuestion` to determine if this session originated from a brainstorm:
+
+```
+AskUserQuestion:
+  questions:
+    - question: "Did this work come from a prior scramstorm?"
+      header: "Scramstorm Handoff"
+      options:
+        - label: "Yes"
+          description: "Import brainstorm results — may allow skipping G1/G2"
+        - label: "No"
+          description: "Start fresh — normal G0 flow"
+      multiSelect: false
+```
+
+**If yes**, follow this numbered handoff processing sequence exactly:
+
+1. **Read manifest** — Ask the user for the brainstorm workspace path (or scan `~/.scram/brainstorm--$(basename "$PWD")--*` for recent workspaces). Read `handoff.md` from the brainstorm workspace.
+2. **Display gate eligibility** — Show the user which gates the brainstorm marked as skippable:
+   ```
+   Scramstorm handoff detected:
+     Workspace: <brainstorm_workspace>
+     Winning option: <winning_option or "exploration (no single winner)">
+     G1 (ADRs) skip eligible: <yes/no>
+     G2 (Docs) skip eligible: <yes/no>
+     Briefs available: <count>
+   ```
+3. **Confirm each skip** — For each eligible gate, use `AskUserQuestion` to confirm the skip. Do not auto-skip; the user must approve each gate compression individually.
+4. **Copy stub briefs** — If the manifest lists briefs, copy them into `SCRAM_WORKSPACE/briefs/`. These serve as starting points for G3 story breakdown — devs refine them, not rewrite from scratch.
+5. **Set current_gate** — Advance `current_gate` in `session.md` to the first non-skipped gate.
+6. **Record in session.md** — Add `prior_brainstorm` and `compressed_gates` to the session manifest frontmatter (see Session Manifest format below).
+
+**If no**, continue with normal G0 flow.
 
 ### Ask About External Tracker and Retrospective
 

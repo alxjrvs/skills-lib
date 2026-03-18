@@ -289,6 +289,25 @@ This synthesis is included in the final presentation.
 
 The orchestrator synthesizes the debate into structured options. Write to `BRAINSTORM_WORKSPACE/options.md` and present to the user.
 
+Also write a structured handoff manifest to `BRAINSTORM_WORKSPACE/handoff.md` so that a subsequent `/scram` session can discover and import this brainstorm's results:
+
+```yaml
+---
+manifest_version: 1
+brainstorm_workspace: <absolute BRAINSTORM_WORKSPACE path>
+winning_option: <number of the recommended option, or null for exploration>
+g1_skip_eligible: true|false
+g2_skip_eligible: true|false
+briefs:
+  - <absolute path to each quick-win brief file produced during Present>
+---
+```
+
+- `winning_option` — the option number if the user wanted `single_recommendation` or `ranked_options` (use the top-ranked), or `null` for `exploration`.
+- `g1_skip_eligible` — `true` if the brainstorm produced ADRs that can serve as G1 output.
+- `g2_skip_eligible` — `true` if the brainstorm produced user-facing docs that can serve as G2 output.
+- `briefs` — list of absolute paths to any quick-win brief files generated during the Present phase. Empty list if none.
+
 ### If the user wanted `single_recommendation`:
 
 ```
@@ -313,6 +332,12 @@ The orchestrator synthesizes the debate into structured options. Write to `BRAIN
 ### Alternatives Considered
 1. <approach> — rejected because <reason>
 2. <approach> — rejected because <reason>
+
+## Next Step
+
+To implement this, start a new conversation and run:
+  /scram implement <recommendation> from this scramstorm
+Workspace: <BRAINSTORM_WORKSPACE path>
 ```
 
 ### If the user wanted `ranked_options`:
@@ -339,6 +364,12 @@ The orchestrator synthesizes the debate into structured options. Write to `BRAIN
 
 ### Team Notes
 <any cross-cutting observations, open questions, or caveats from the debate>
+
+## Next Step
+
+To implement this, start a new conversation and run:
+  /scram implement <option> from this scramstorm
+Workspace: <BRAINSTORM_WORKSPACE path>
 ```
 
 ### If the user wanted `exploration`:
@@ -366,6 +397,12 @@ The orchestrator synthesizes the debate into structured options. Write to `BRAIN
 ### Open Questions
 Each open question must include a **named decision owner** and a **resolution trigger** (deadline, blocker, or escalation condition). Open questions without owners are organizational debt. If the brainstorm cannot name an owner, flag the question as a blocker on the relevant option.
 - <question> — **Owner:** <who decides> — **Resolve by:** <trigger>
+
+## Next Step
+
+To implement this, start a new conversation and run:
+  /scram implement <option> from this scramstorm
+Workspace: <BRAINSTORM_WORKSPACE path>
 ```
 
 ### Prerequisite Verification
@@ -390,8 +427,6 @@ If the brainstorm produced meaningful architectural decisions — approach selec
 ### Record to Issue Tracker
 
 If the user opted in to issue tracking during Frame, create an issue with the final synthesized options as the body.
-
-After presenting, report the workspace path so the user can review the full debate artifacts if they want deeper context.
 
 ### Retrospective (optional)
 
