@@ -574,7 +574,10 @@ Before dispatching any stories, the orchestrator creates a persistent team for t
 1. **Create the team** via `TeamCreate` with `team_name: "scram-<feature-name>"`
 2. **Spawn Metron** (merge maintainer) as a named teammate: `Agent` with `name: "Metron"`, `team_name: "scram-<feature-name>"`, `subagent_type: "scram:merge-maintainer"`
 3. **Spawn Highfather** (code maintainer) as a named teammate: `Agent` with `name: "Highfather"`, `team_name: "scram-<feature-name>"`, `subagent_type: "scram:code-maintainer"`
-4. **Seed tasks** from `SCRAM_WORKSPACE/backlog.md` via `TaskCreate` — one task per story. These mirror the file backlog for within-session coordination. **`backlog.md` remains authoritative.** Tasks API is a convenience view, not the source of truth.
+
+**`backlog.md` is the sole source of truth for story status.** Do not seed tasks into the Tasks API.
+
+> **ADR:** Tasks API dropped — `backlog.md` is sole source of truth. The Tasks API was not verified in use for real-time coordination and created silent sync drift between in-memory task state and the persistent file. Removing it eliminates that failure class and makes `backlog.md` → `session.md` the single recovery mechanism.
 
 The maintainers stay alive as persistent teammates for the entire stream phase (G3 to G4). They coordinate dual-approval directly via `SendMessage` without the orchestrator as relay. They go idle between turns — this is normal. Sending a message wakes them.
 
