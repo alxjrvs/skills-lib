@@ -14,7 +14,9 @@ SCRAM uses **5 sequential gates** (plus an optional retrospective) and **3 concu
 
 | Role | Count | Default Model | Flex To | Agent (`subagent_type`) | Responsibility |
 |------|-------|---------------|---------|-------------------------|----------------|
-| Developer | 1-5 | sonnet | opus | `scram:developer` | Doc review, story breakdown, context briefs, TDD implementation, escalation handling (max 5) |
+| Developer (Reviewer) | 1-3 | sonnet | (fixed) | `scram:developer-reviewer` | G1 ADR review, G2 doc review |
+| Developer (Breakdown) | 1-3 | sonnet | (fixed) | `scram:developer-breakdown` | G3 story sizing, context brief authoring |
+| Developer (Impl) | 1-5 | sonnet | opus | `scram:developer-impl` | TDD implementation, escalation handling (max 5) |
 | Merge Maintainer | 1 | sonnet | (fixed) | `scram:merge-maintainer` | Line-level code review, story strictness, TDD discipline, scope enforcement |
 | Code Maintainer | 1 | sonnet | (fixed) | `scram:code-maintainer` | Structural harmony, DRYness, codebase-wide patterns, architectural drift |
 | Doc Specialist | 1-3 | sonnet | (fixed) | `scram:doc-specialist` | ADR authoring, docs-as-spec, incremental refinement (max 3, spun up as needed) |
@@ -22,7 +24,7 @@ SCRAM uses **5 sequential gates** (plus an optional retrospective) and **3 concu
 | Dev Tooling Maintainer | 0-1 | sonnet | (fixed) | `scram:dev-tooling-maintainer` | CI/CD, build systems, agentic integrations, DX (optional role) |
 | Orchestrator | 1 (you) | — | — | — | Gate coordination, agent dispatch on behalf of merge maintainers, reporting to user |
 
-**Important:** When dispatching agents via the `Agent` tool, always use the `scram:` prefix in `subagent_type` (e.g., `subagent_type: "scram:developer"`). This ensures the correct plugin agent definitions are used.
+**Important:** When dispatching agents via the `Agent` tool, always use the `scram:` prefix in `subagent_type` (e.g., `subagent_type: "scram:developer-impl"`). This ensures the correct plugin agent definitions are used.
 
 Scale the team to the work. Not every role needs to be filled for small tasks.
 
@@ -32,7 +34,9 @@ Scale the team to the work. Not every role needs to be filled for small tasks.
 
 Name agents after Jack Kirby New Gods characters:
 
-**Devs:** Orion, Barda, Scott, Lightray, Bekka, Forager, Bug, Serifan, Vykin, Fastbak
+**Devs (impl):** Orion, Barda, Scott, Lightray, Bekka, Forager, Bug, Serifan, Vykin, Fastbak
+**Devs (reviewer):** Use the same name pool — a reviewer is a developer in a different mode
+**Devs (breakdown):** Use the same name pool
 **Merge Maintainer:** Metron
 **Code Maintainer:** Highfather
 **Doc Specialists:** Beautiful Dreamer, Mark Moonrider, Jezebelle
@@ -348,12 +352,14 @@ Each ADR follows: Context, Decision, Consequences, Status.
 
 ### G1 Review
 
-**Code maintainer (Highfather)** leads ADR review with one dev — they own architectural decisions:
+**Code maintainer (Highfather)** leads ADR review with one `scram:developer-reviewer` — they own architectural decisions:
 - Are decisions well-reasoned with clear trade-offs?
 - Are they feasible to implement?
 - Do they fit existing project patterns and long-term codebase direction?
 - **No implementation detail in ADRs** — reject ADRs containing file paths, line numbers, or implementation specifics. Those belong in context briefs (G3), not architectural decisions.
 - If designer is active: designer reviews design ADRs for feasibility and consistency
+
+Dispatch `scram:developer-reviewer` without worktree isolation — Tier 2 dispatch. The agent reads docs and ADRs and writes a review report to `SCRAM_WORKSPACE/`. No branch is created.
 
 **Merge maintainer (Metron)** gives a lightweight approval — not driving the review, but catching any technically wild decisions that would make implementation unreasonable. Approve or flag concerns only.
 
@@ -371,7 +377,9 @@ Dispatch doc specialists with `isolation: "worktree"`:
 
 ### G2 Review
 
-Both maintainers + one dev review the docs, each through their own lens:
+Both maintainers + one `scram:developer-reviewer` review the docs, each through their own lens:
+
+Dispatch `scram:developer-reviewer` without worktree isolation — Tier 2 dispatch. The agent reads docs and writes a review to `SCRAM_WORKSPACE/`. No branch is created.
 
 **Code maintainer (Highfather)** reviews for architectural coherence:
 - **Consistency** — does it fit with existing project conventions and docs?
@@ -429,7 +437,9 @@ If a designer is on the team, flag any story that touches user-facing elements (
 
 ### Write Context Briefs (as files)
 
-Devs write a context brief **file** for each story at `SCRAM_WORKSPACE/briefs/<story-slug>.md`:
+Dispatch `scram:developer-breakdown` without worktree isolation — Tier 2 dispatch. The agent reads docs-as-spec and writes context briefs to `SCRAM_WORKSPACE/briefs/`. No branch is created.
+
+`scram:developer-breakdown` writes a context brief **file** for each story at `SCRAM_WORKSPACE/briefs/<story-slug>.md`:
 
 ```markdown
 # <Story Title>
@@ -456,6 +466,11 @@ Use content-stable grep anchors to identify locations in files. **Never use line
 
 ## Architecture
 <summary of relevant architecture and relevant ADRs from G1>
+
+## Checklist
+<Story-specific checklist items. Populate only the checklist(s) relevant to this story's domain.
+If no special checklist applies, write "none". Available categories:
+- Shared-state, Call-boundary, Async/lifecycle, Test-update (see developer-breakdown agent for item text)>
 
 ## Deliverables
 - [ ] <file> — <specific change>
@@ -553,7 +568,7 @@ If a maintainer's session dies mid-stream (context exhaustion, crash):
 
 ### Dev Stream (Red-Green-Refactor)
 
-Dev agents are **always one-shot** with `isolation: "worktree"`. They are NOT team members. The orchestrator dispatches them directly via the `Agent` tool — on maintainer instruction via SendMessage or task state.
+`scram:developer-impl` agents are **always one-shot** with `isolation: "worktree"`. They are NOT team members. The orchestrator dispatches them directly via the `Agent` tool — on maintainer instruction via SendMessage or task state.
 
 **CRITICAL: When dispatching dev agents, the orchestrator MUST include explicit instructions to `git checkout` the integration branch before starting work.** The `isolation: "worktree"` parameter creates a worktree but may default to branching from `main` or HEAD. The agent's prompt must include:
 
