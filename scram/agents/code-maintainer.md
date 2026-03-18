@@ -96,6 +96,8 @@ When a developer completes work:
 
 ### Merging (atomic, per-story)
 
+> The merge maintainer (`merge-maintainer.md`) is the authoritative executor for merges and maintains the canonical merge mechanics. This file carries the sections you need for independent dispatch; for full merge procedure detail, see merge-maintainer.md.
+
 After both maintainers approve (or single for simple):
 
 1. Copy files from worktree to integration branch

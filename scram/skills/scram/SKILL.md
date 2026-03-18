@@ -337,18 +337,11 @@ Each ADR follows: Context, Decision, Consequences, Status.
 
 ### G1 Review
 
-**Code maintainer (Highfather)** leads ADR review with one `scram:developer-reviewer` — they own architectural decisions:
-- Are decisions well-reasoned with clear trade-offs?
-- Are they feasible to implement?
-- Do they fit existing project patterns and long-term codebase direction?
-- **No implementation detail in ADRs** — reject ADRs containing file paths, line numbers, or implementation specifics. Those belong in context briefs (G3), not architectural decisions.
-- If designer is active: designer reviews design ADRs for feasibility and consistency
+Highfather reviews ADRs per code maintainer definition. Metron performs lightweight approval per merge maintainer definition. Dispatch one `scram:developer-reviewer` for the dev perspective. Once approved, code maintainer merges ADRs into the integration branch.
 
-Dispatch `scram:developer-reviewer` without worktree isolation — Tier 2 dispatch. The agent reads docs and ADRs and writes a review report to `SCRAM_WORKSPACE/`. No branch is created.
+If designer is active: designer reviews design ADRs for feasibility and consistency.
 
-**Merge maintainer (Metron)** gives a lightweight approval — not driving the review, but catching any technically wild decisions that would make implementation unreasonable. Approve or flag concerns only.
-
-If issues found, revise and re-submit. Once approved, code maintainer merges ADRs into the integration branch.
+If issues found, revise and re-submit.
 
 ## G2: User-Facing Docs
 
@@ -362,23 +355,9 @@ Dispatch doc specialists with `isolation: "worktree"`:
 
 ### G2 Review
 
-Both maintainers + one `scram:developer-reviewer` review the docs, each through their own lens:
+Both maintainers + one `scram:developer-reviewer` review docs per their agent definitions. If designer is active: designer reviews for design ADR alignment. Once approved, maintainers merge docs into the integration branch.
 
-Dispatch `scram:developer-reviewer` without worktree isolation — Tier 2 dispatch. The agent reads docs and writes a review to `SCRAM_WORKSPACE/`. No branch is created.
-
-**Code maintainer (Highfather)** reviews for architectural coherence:
-- **Consistency** — does it fit with existing project conventions and docs?
-- **ADR alignment** — do docs reflect the architectural decisions from G1?
-- **Completeness** — does it cover all features from the initial premise?
-
-**Merge maintainer (Metron)** reviews for implementability:
-- **Clarity** — are types, signatures, and behaviors unambiguous?
-- **Testability** — can TDD tests be derived directly from this doc?
-- **Feasibility** — can a developer implement this as described?
-
-If designer is active: designer reviews for design ADR alignment
-
-If issues found, doc specialists revise and re-submit. Once approved, maintainers merge docs into the integration branch.
+If issues found, doc specialists revise and re-submit.
 
 ## G3: Story Breakdown
 
@@ -605,32 +584,7 @@ Default escalation path for capability failures: sonnet → opus. **If the same 
 
 Both maintainers are persistent teammates. As each dev agent completes:
 
-1. **Pre-review git health check** — before anything else, confirm:
-   - The agent's reported branch exists (`git branch --list`)
-   - The agent's reported commit SHA exists on that branch (`git log --oneline <branch> | head -1`)
-   - `git diff <integration-branch>...<story-branch>` is non-empty
-   If any check fails, route back as a **git state issue** (not an implementation rejection) and redispatch.
-2. **Verify worktree metadata** — confirm the agent response includes `worktreePath` and `worktreeBranch`. If either is missing, the agent likely did not commit and the work is lost — flag immediately and redispatch before proceeding.
-3. **Verify isolation** — confirm the commit was made in the worktree on the correct story branch, NOT on the integration branch or main repo. If the agent committed on the wrong branch, see Cherry-Pick Fallback below.
-4. The orchestrator sends the **structured Story Report** to the maintainer team via `SendMessage`
-4. Maintainers review the worktree diff against the integration branch
-5. **Scope check** — verify the changed file list matches the story brief's `## Deliverables` section. Any out-of-scope file path is an automatic rejection. This catches cross-story contamination from concurrent agents.
-6. **Verify one-commit-per-story** — reject if multiple stories were bundled into one commit
-7. **Diff direction** — before rendering a verdict, the reviewer must state the diff direction: "This diff removes X and adds Y." For rejections, paste the specific diff lines that are incorrect.
-8. Verify implementation matches docs and ADRs
-9. Verify Red-Green-Refactor was followed: tests exist, tests pass, code is clean (for `run_type: docs`, verify with build/lint instead)
-10. **Lint/export check** — if the story adds or modifies exports, run Knip or equivalent dead-export detection before approving
-11. **Simple stories**: single maintainer approval (either Metron or Highfather)
-12. **Moderate/complex stories**: both maintainers approve independently via `SendMessage` peer-to-peer — Metron for correctness, Highfather for harmony. No orchestrator relay needed.
-    **Disagreement protocol:** If maintainers disagree: (1) each states position with rationale, (2) one rebuttal round, (3) if unresolved, conservative-wins or escalate to user. Dual-approval must not silently degrade to deference.
-13. **UI/UX stories** (when designer is active): designer approval required **in addition to** maintainer approval(s)
-14. **Artifact stories**: any story that generates or checks in a derived artifact requires two consecutive clean runs before merge approval.
-15. Maintainers notify the orchestrator of the decision. The orchestrator executes the merge into the integration branch (one atomic commit per story).
-15. **Post-merge typecheck** — run `bun run typecheck` (or equivalent) from the repo root against the integration branch after merge. Worktree typecheck is necessary but not sufficient — downstream consumers may only exist on the integration branch. Pre-push hooks are a safety net, not a substitute.
-16. Run full test suite after merge
-17. Update `SCRAM_WORKSPACE/backlog.md` — set status to `merged`, record commit hash
-18. Update `SCRAM_WORKSPACE/session.md` — move story to Merged Stories, update timestamp
-19. Update tracker if configured
+Dispatch Metron with the Story Report. Metron performs pre-review git health checks, dual-approval coordination, and merge execution per its agent definition.
 
 **If tests or typecheck fail after merge:** Revert immediately. Write `HALT` file to SCRAM workspace. Update backlog status to `failed`. Do NOT merge further stories until integration branch is green and `HALT` is removed.
 
@@ -721,11 +675,6 @@ The user can continue in a fresh session. The new orchestrator will find the wor
 - Never skip hooks or force-push
 - New commits only — never amend
 - One atomic commit per story
-- Scale team size to task complexity
-- If uncertain about requirements, ask the user before proceeding
-- All agents must use their defined structured report format
-- Backlog and context briefs are files in the SCRAM workspace, not inline context
 - SCRAM workspace is outside the project repo — never committed to git
 - **G2 doc work MUST use `scram:doc-specialist` agents** — developers may not substitute for doc specialists at G2
 - **External service work** — when agents update external services via API (not git-tracked files), use the staging pattern: write proposed content to local files in the worktree first, maintainers review those files as a diff, only after approval does a final step push to the external service. This preserves the review gate for side-effectful work.
-- **Co-Authored-By for proxy commits** — when the orchestrator commits on behalf of another agent, include a `Co-Authored-By` line for the producing agent (name + model) to preserve authorship in git history
