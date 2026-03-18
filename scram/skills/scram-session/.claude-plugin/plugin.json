@@ -1,0 +1,5 @@
+{
+  "name": "scram-session",
+  "version": "1.0.0",
+  "description": "SCRAM session lifecycle reference sub-skill"
+}
