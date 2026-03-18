@@ -50,8 +50,11 @@ else
   exit 0
 fi
 
-# Grep for line-number patterns
-MATCHES=$(echo "$LINT_TARGET" | grep -nE '(line [0-9]+|:[0-9]+$|L[0-9]+)' 2>/dev/null || true)
+# Grep for line-number patterns; exclude port-number false positives by filtering
+# out lines where :[0-9]+ is preceded by a URL context (http, https, localhost, or //)
+MATCHES=$(echo "$LINT_TARGET" | grep -nE '(line [0-9]+|:[0-9]+$|L[0-9]+)' 2>/dev/null \
+  | grep -vE '(https?://[^[:space:]]*:[0-9]+$|localhost:[0-9]+$|//[^[:space:]]*:[0-9]+$)' \
+  || true)
 
 if [ -n "$MATCHES" ]; then
   echo "BRIEF_LINT: fail $FILE_PATH"

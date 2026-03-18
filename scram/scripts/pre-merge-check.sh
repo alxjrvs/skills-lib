@@ -14,8 +14,7 @@ COMMIT_SHA="$2"
 INTEGRATION_BRANCH="$3"
 
 # Check 1: branch exists
-BRANCH_EXISTS=$(git branch --list "$BRANCH_NAME")
-if [ -z "$BRANCH_EXISTS" ]; then
+if ! git rev-parse --verify "refs/heads/$BRANCH_NAME" >/dev/null 2>&1; then
   echo "PRE_MERGE: fail"
   echo "  check: branch_exists"
   echo "  reason: branch '$BRANCH_NAME' does not exist"

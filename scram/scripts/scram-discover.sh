@@ -2,7 +2,7 @@
 # scram-discover.sh — Find existing SCRAM sessions for the current project.
 # Always exits 0 (even if no sessions found).
 
-PROJECT_NAME=$(basename "$PWD")
+PROJECT_NAME=$(git rev-parse --show-toplevel 2>/dev/null | xargs basename 2>/dev/null || basename "$PWD")
 SESSIONS=$(ls -d ~/.scram/"$PROJECT_NAME"--* 2>/dev/null)
 
 if [ -z "$SESSIONS" ]; then
