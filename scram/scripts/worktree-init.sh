@@ -37,7 +37,7 @@ echo "CHECK 1 PASSED: In worktree at $TOPLEVEL (main repo at $MAIN_WORKTREE)"
 
 # Check 2: Confirm the worktree was created from the integration branch
 MERGE_BASE="$(git merge-base HEAD "$INTEGRATION_BRANCH" 2>/dev/null || true)"
-INTEGRATION_TIP="$(git rev-parse "$INTEGRATION_BRANCH" 2>/dev/null || true)"
+INTEGRATION_TIP="$(git rev-parse --verify "$INTEGRATION_BRANCH" 2>/dev/null || true)"
 
 if [ -z "$MERGE_BASE" ] || [ -z "$INTEGRATION_TIP" ]; then
   echo "FAIL: Cannot find integration branch '$INTEGRATION_BRANCH'" >&2
