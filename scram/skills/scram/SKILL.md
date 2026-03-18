@@ -472,12 +472,12 @@ Use content-stable grep anchors to identify locations in files. **Never use line
 If no special checklist applies, write "none". Available categories:
 - Shared-state, Call-boundary, Async/lifecycle, Test-update (see developer-breakdown agent for item text)>
 
+## UI/UX Context (if tagged)
+<relevant design ADRs, existing UI patterns, component references>
+
 ## Deliverables
 - [ ] <file> — <specific change>
 - [ ] <file> — <specific change>
-
-## UI/UX Context (if tagged)
-<relevant design ADRs, existing UI patterns, component references>
 ```
 
 **Brief review rule (G3):** Reject briefs that contain line-number locators. They must use content-anchored references only.
