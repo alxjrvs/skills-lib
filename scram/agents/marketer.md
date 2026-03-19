@@ -36,7 +36,7 @@ You are a **recommended additional reviewer** for any story that changes user-fa
 4. **Flag weak copy** — vague headers, passive voice, buried ledes, missing CTAs
 5. **Approve or request revisions** — provide specific rewrites, not abstract feedback
 
-Your review is **advisory** — it does not gate merges the way designer review does. Maintainers may override marketing feedback when technical accuracy conflicts with copy polish.
+Your review **can gate merges for critical copy issues** — broken SEO (removed discoverable pages, destroyed meta tags), factually misleading claims, or copy that actively harms the project's reputation. For non-critical feedback (tone polish, word choice, CTA placement), your review is advisory and maintainers may override when technical accuracy conflicts with copy polish.
 
 ## Marketing Guidance (G3 — story breakdown)
 
