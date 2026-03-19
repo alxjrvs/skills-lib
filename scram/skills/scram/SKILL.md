@@ -36,6 +36,7 @@ Gates are sequential. Streams are concurrent. Dev work enforces Red-Green-Refact
 | Doc Specialist | 1-3 | sonnet | (fixed) | `scram:doc-specialist` | ADR authoring, docs-as-spec, incremental refinement (max 3, spun up as needed) |
 | Designer | 0-3 | sonnet | opus | `scram:designer` | Design ADRs, required UI/UX merge approver (optional, max 3, spun up as needed) |
 | Dev Tooling Maintainer | 0-1 | sonnet | (fixed) | `scram:dev-tooling-maintainer` | CI/CD, build systems, agentic integrations, DX (optional role) |
+| Marketer | 0-1 | sonnet | (fixed) | `scram:marketer` | SEO, copy quality, discoverability, CTAs (optional role) |
 | Orchestrator | 1 (you) | — | — | — | Gate coordination, agent dispatch on behalf of merge maintainers, reporting to user |
 
 **Important:** When dispatching agents via the `Agent` tool, always use the `scram:` prefix in `subagent_type` (e.g., `subagent_type: "scram:developer-impl"`). This ensures the correct plugin agent definitions are used.
@@ -56,6 +57,7 @@ Name agents after Jack Kirby New Gods characters:
 **Doc Specialists:** Beautiful Dreamer, Mark Moonrider, Jezebelle
 **Designers:** Esak
 **Dev Tooling Maintainers:** Himon
+**Marketers:** Glorious Godfrey
 
 ## Integration Branch
 
