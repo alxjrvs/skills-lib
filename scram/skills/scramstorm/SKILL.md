@@ -222,6 +222,24 @@ After research and before tickets, each agent flags any claim in the problem sta
 
 This is distinct from Open Questions Resolution — that step resolves ambiguities. This step resolves *inaccuracies*. Agents should not generate options based on stale assumptions.
 
+### Verification Pass (quantitative brainstorms only)
+
+When the brainstorm is about measurable outcomes (bundle size, latency, memory usage, build times), dispatch one agent after research to make a minimal change in a worktree and measure the actual impact. This turns estimated savings into verified data.
+
+```bash
+git worktree add .claude/worktrees/scramstorm-verify -b scramstorm/verify
+```
+
+The verification agent:
+1. Makes the smallest change that tests the hypothesis (e.g., change one config flag, remove one dependency)
+2. Measures before/after (build time, bundle size, test output)
+3. Reports raw numbers — no interpretation
+4. Cleans up the worktree
+
+Include the verification results in the research phase output. Agents then write tickets based on measured data, not estimates. If the change is <5 lines and fully reversible, the verification data ships alongside the brief as a "pre-validated quick win."
+
+This pass is skipped for design-choice brainstorms (naming, structure, taxonomy) where there's nothing to measure.
+
 ## Phase 3: Tickets (anonymous)
 
 After research and question resolution, dispatch **every agent again**. Each agent reads:
@@ -281,9 +299,13 @@ Tag filtered tickets as `non-starter: <reason>` and pull them from the ballot.
 
 **3. Fact vs. opinion split:** Tickets with confirmed code evidence (bugs, misclassifications backed by `file:line` citations) go to a "fix queue" unconditionally — they do not participate in the popularity vote. Only design choices (naming conventions, structure, taxonomy preferences) go to majority vote. Bugs should not lose popularity contests to type annotations.
 
+**4. Spike resolution:** Any ticket that depends on an unresolved implementation question (library compatibility, latency budget, environment-specific behavior) must have that question answered before it enters the ballot. Dispatch one agent for a quick code-search or documentation check. Questions that cannot be resolved within the brainstorm session are flagged as explicit `blocker: <question>` on the ticket — voters see the blocker before casting votes. Do not export unresolved spikes as "open implementation questions" in the final output.
+
 ## Phase 4: Vote
 
 Dispatch **every agent again** with the deduplicated ticket set. Each reads all tickets in `BRAINSTORM_WORKSPACE/tickets/` and votes for the ones most relevant to the problem. Each agent gets votes equal to **half the ticket count, rounded up** (e.g., 10 tickets = 5 votes per agent).
+
+**High-convergence skip:** If the dedup pass in Phase 3 produced ≤3 distinct tickets AND one ticket was authored by >75% of participating agents, the authorship counts already serve as votes. Skip the formal vote dispatch — go straight to `votes.md` with authorship-as-votes. The orchestrator logs: "Vote phase skipped — high convergence (N/M agents independently proposed ticket NNN)."
 
 Each agent returns their votes as a list of ticket numbers. The orchestrator tallies votes and writes the results to `BRAINSTORM_WORKSPACE/votes.md`:
 
@@ -313,11 +335,14 @@ No real bugs leave the brainstorm without a home.>
 
 Discuss tickets that received a **majority of votes** (>50% of participating agents voted for them). Low-scoring tickets are ignored unless an agent flags one as critical (in which case, include it).
 
-**Unanimous tickets skip discussion and generate briefs.** If a ticket received votes from every agent, emit a one-line "Unanimous — no discussion needed" note and move it directly to the final output. Write a `discussion/SKIPPED.md` noting: "Skipped: all N researchers reached the same conclusion independently; no dissent to surface." Additionally, if the unanimous ticket's `options.md` entry contains a "What To Do" section with enumerated steps, auto-generate a stub story brief in `BRAINSTORM_WORKSPACE/briefs/` for the first concrete action item — this prevents the user from re-entering context the brainstorm already produced.
+**Unanimous tickets skip discussion and generate briefs.** If a ticket received votes from every agent, emit a one-line "Unanimous — no discussion needed" note and move it directly to the final output. Write a `discussion/SKIPPED.md` noting: "Skipped: all N researchers reached the same conclusion independently; no dissent to surface."
+
+Every unanimous ticket still gets a brief — unanimity means "skip debate," not "skip documentation." The brief includes: (1) what could go wrong (failure modes, edge cases, assumptions that could break), and (2) the canonical implementation path. If the ticket's `options.md` entry contains a "What To Do" section with enumerated steps, auto-generate a stub story brief in `BRAINSTORM_WORKSPACE/briefs/` for the first concrete action item.
 
 ### Steward Triage
 
 Before discussion opens, the orchestrator (or Highfather) tags each winning ticket's items as:
+- `baseline` — uncontested hygiene (single-file change, no architectural decision, no trade-offs). Auto-ships with a thumbs-up confirmation from any agent — does not enter ranked vote or discussion. This prevents the process from treating routine infrastructure changes like architectural choices.
 - `ship` — ready to act on, discuss implementation
 - `decide` — needs a product/architecture decision before acting
 - `investigate` — needs more research before deciding
@@ -342,7 +367,11 @@ This synthesis is included in the final presentation.
 
 ## Phase 6: Present
 
-The orchestrator synthesizes the debate into structured options. Write to `BRAINSTORM_WORKSPACE/options.md` and present to the user.
+The orchestrator synthesizes the debate into structured options.
+
+**Root cause check:** Before writing options, the orchestrator adds a `## Is This the Right Problem?` paragraph at the top of `options.md`. This paragraph explicitly states whether the winning tickets address the root cause or a symptom. If they address symptoms, say so — "These options treat X, but the underlying cause is Y. A future brainstorm on Y may be warranted." This prevents the next sprint from discovering mid-implementation that it's solving the wrong layer.
+
+Write to `BRAINSTORM_WORKSPACE/options.md` and present to the user.
 
 Also write a structured handoff manifest to `BRAINSTORM_WORKSPACE/handoff.md` so that a subsequent `/scram` session can discover and import this brainstorm's results:
 
@@ -377,8 +406,17 @@ For any option estimated at **low effort** (under ~2 hours), the brainstorm outp
 
 Every observation that didn't become a winning ticket must carry one of three labels in the final output:
 - `follow-up-brainstorm` — complex enough to warrant its own brainstorm
-- `backlog-ticket` — should be filed as a ticket outside this brainstorm
+- `backlog-ticket:<severity>` — should be filed as a ticket outside this brainstorm. Severity tag required: `perf` (performance regression), `correctness` (logic error), `hygiene` (cleanup, naming, structure). Lets the next agent triage without re-reading the full research.
 - `accepted-risk` — acknowledged, not worth fixing now, with stated rationale
+
+### Findings Without Tickets
+
+Add a `## Findings Without Tickets` section to `options.md`. These are research findings that are real and documented but did not reach ticket threshold. Each finding includes:
+- The finding (one sentence)
+- Which agent surfaced it
+- Why it didn't become a ticket (insufficient evidence, out of scope, lower priority)
+
+This prevents valuable research from disappearing after votes close and gives the next sprint a starting point for deeper investigation.
 
 ### Record ADRs
 
