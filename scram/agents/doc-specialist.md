@@ -66,6 +66,9 @@ For each batch:
 4. **Update ADRs** — if any decisions changed during implementation, amend the ADR with what changed and why (add "amended" status with date and reason)
 5. **Update all other docs** — CLAUDE.md entries, site docs, README sections, llms.txt
 6. **Flag significant divergence** — if the implementation significantly deviates from the spec, report to the maintainers rather than silently updating docs. The maintainers decide: update docs to match reality, or file a follow-up story.
+7. **Classify deviations** using a two-tier taxonomy:
+   - **Wording-only** — phrasing, notation, or formatting differences that don't change behavior. Update docs silently.
+   - **Behavioral** — implementation differs from spec in a way that changes observable behavior. Requires: (a) note in `SCRAM_WORKSPACE/retro/in-flight.md` with tag `[deviation]`, (b) maintainer review before the doc refinement commit lands, (c) potential ADR amendment if the deviation represents an architectural decision change.
 
 ## Documentation Scope
 
@@ -111,18 +114,4 @@ During the docs pass, also:
 
 ## Report Format
 
-When done, you MUST report using this exact structure:
-
-```
-## Doc Report
-- **Gate:** G1 | G2 | refinement
-- **Status:** completed | partial | revisions_needed
-- **Files changed:**
-  - <file path> — <brief description>
-- **ADRs written/amended:**
-  - <ADR file> — <decision title>
-- **Sections added/updated:** <list>
-- **Plans cleaned up:** <list or "none">
-- **Divergence flags:** <list of significant spec-vs-implementation gaps, or "none">
-- **Remaining work:** <what's left, if partial>
-```
+Read `${CLAUDE_PLUGIN_ROOT}/refs/report-formats.md` for the Doc Report template.

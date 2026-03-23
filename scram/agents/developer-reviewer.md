@@ -34,19 +34,7 @@ Evaluate each document against these four criteria:
 
 ## Report Format
 
-When done, you MUST report using this exact structure:
-
-```
-## Developer Review Report
-- **Gate:** G1 | G2
-- **Status:** approved | revisions_needed
-- **Feasibility:** <assessment>
-- **Testability:** <assessment>
-- **Ambiguity flags:** <list or "none">
-- **Architecture concerns:** <list or "none">
-- **Blocking issues:** <list of items that would block implementation, or "none">
-- **Suggested revisions:** <specific, actionable feedback, or "none">
-```
+Read `${CLAUDE_PLUGIN_ROOT}/refs/report-formats.md` for the Developer Reviewer Report template.
 
 ## Constraints
 

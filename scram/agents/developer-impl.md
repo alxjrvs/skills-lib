@@ -51,6 +51,7 @@ When assigned a story (including escalated stories that failed on a previous att
    - `git status` shows no untracked files from other stories
    - You are NOT on the integration branch itself — you must be on a story branch created FROM it
    If ANY check fails, **STOP and report to the orchestrator**. Do not proceed. Do not commit on the integration branch directly.
+   Report with `status: failed` and `failure_reason: worktree_isolation_missing`. The orchestrator will write a `HALT` file and investigate.
 3. **Re-verify before every commit** — run `git rev-parse --abbrev-ref HEAD` again before `git commit`. Include the branch name and commit SHA in your completion report.
 
 ## Pre-flight
@@ -71,28 +72,9 @@ Before writing any code, verify:
 4. **Find existing patterns** — look at similar implementations to follow the same structure
 5. **Scope discipline** — implement ONLY what satisfies this story's acceptance criteria. No stubs, scaffolding, or infrastructure for future stories. If you encounter adjacent bugs, document them in your Story Report — do not fix them in this commit. Reviewers will flag untraceable code as a scope violation.
 
-## RED — Write Failing Tests
+## TDD Phases
 
-- Derive tests directly from the documented behavior and acceptance criteria
-- Cover happy path, edge cases, and error conditions from the docs
-- Tests must compile/parse but **fail** — there is no implementation yet
-- Run tests to confirm they fail as expected
-- **Do NOT write any implementation code in this phase**
-
-## GREEN — Write Minimum Code to Pass
-
-- Write the **minimum implementation** to make all RED tests pass
-- No optimization, no cleanup, no extras — just make it green
-- Run tests to confirm they all pass
-- **Do NOT refactor in this phase**
-
-## REFACTOR — Improve Code Quality
-
-- Refactor for clarity, readability, and best practices
-- Streamline: remove duplication, simplify logic, improve naming
-- Ensure code follows project conventions (CLAUDE.md)
-- Run tests after refactoring to confirm nothing broke
-- **All tests must still pass after refactor**
+Read `${CLAUDE_PLUGIN_ROOT}/refs/tdd-discipline.md` for the Red-Green-Refactor phases. Follow them exactly.
 
 ## Escalation
 
@@ -126,27 +108,7 @@ Include the final commit count in your Story Report. Do not report completion un
 
 ## Story Report
 
-When done, you MUST report using this exact structure:
-
-```
-## Story Report
-- **Story:** <story-id>
-- **Branch:** <branch name from git rev-parse --abbrev-ref HEAD>
-- **Commit:** <commit SHA from git rev-parse HEAD>
-- **Status:** completed | partial | failed
-- **Phase reached:** RED | GREEN | REFACTOR
-- **Failure reason:** none | context_exhaustion | test_failure | build_error | missing_dependency | unclear_spec | pre_flight_failure
-- **Failure details:** <specific error message or description, if failed>
-- **Commit count:** <output of `git rev-list --count --no-merges <integration-branch>..HEAD` — must be 1>
-- **Files changed:**
-  - <file path> — <brief description>
-- **Tests:** <pass count>/<total count> passing
-- **Pre-existing issues:** <list or "none">
-- **Design decisions:** <any architectural choices made and why>
-- **Adjacent issues found:** <bugs or problems found but not fixed — document here for orchestrator>
-- **Remaining work:** <what's left, if partial>
-- **Escalation notes:** <if escalated: what was different from previous attempt>
-```
+Read `${CLAUDE_PLUGIN_ROOT}/refs/report-formats.md` for the Story Report template.
 
 ## Constraints
 
@@ -157,5 +119,6 @@ When done, you MUST report using this exact structure:
 - **Your commit must contain only changes required by this story's acceptance criteria.** If you find adjacent bugs, document them for the orchestrator — do not fix them in this commit.
 - Do NOT run `git push` or any destructive git operations
 - **NEVER** use `--no-verify`, `LEFTHOOK=0`, `--no-gpg-sign`, or any flag that skips hooks or checks. If a hook fails, investigate and fix the root cause.
+- **Hook scope diagnosis:** If pre-commit hooks fail on files outside your story's scope (e.g., monorepo-wide typecheck failing on unrelated packages), diagnose and report — do not attempt to fix out-of-scope failures. Include the hook output and scope analysis in your Story Report under "Pre-existing issues."
 - If in-flight review signals are expected from overlapping stories, hold your commit until the signal resolves.
 - If you encounter pre-existing issues (lint errors, failing tests), report them — do not work around them

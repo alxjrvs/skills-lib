@@ -43,4 +43,15 @@ echo "PRE_MERGE: pass"
 echo "  branch: $BRANCH_NAME"
 echo "  sha: $COMMIT_SHA"
 echo "  diff: non-empty"
+
+# Verify story is in_review (sprint only)
+if [ -n "${SCRAM_WORKSPACE:-}" ] && [ -f "$SCRAM_WORKSPACE/backlog.md" ] && [ -n "${STORY_SLUG:-}" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  STATUS=$("$SCRIPT_DIR/scram-backlog.sh" status "$SCRAM_WORKSPACE" "$STORY_SLUG" 2>/dev/null || echo "unknown")
+  if [ "$STATUS" != "in_review" ]; then
+    echo "Story '$STORY_SLUG' is not in_review (current: $STATUS) — merge blocked" >&2
+    exit 1
+  fi
+fi
+
 exit 0

@@ -35,7 +35,7 @@ You receive the **SCRAM workspace path** (absolute) when dispatched. This worksp
 
 ### G0: Environment Check + Integration Branch
 
-> See `merge-maintainer.md § G0: Environment Check + Integration Branch` for the canonical procedure.
+> See `${CLAUDE_PLUGIN_ROOT}/refs/merge-protocol.md` for the canonical G0 procedure (merge-maintainer runs it).
 
 ### ADR Review (G1 — architectural decisions first)
 
@@ -63,10 +63,12 @@ When doc specialists complete the feature documentation:
 
 ### Code Review (Merge Stream — continuous)
 
+Read `${CLAUDE_PLUGIN_ROOT}/refs/review-checklist.md` for the shared review checklist.
+
 When a developer completes work:
 
 1. **Read the diff** — review all changed files in the worktree against the integration branch
-2. **Review for codebase health**:
+2. **Review for codebase health** (your unique architectural lens):
    - **Harmony with existing patterns** — does this code follow the conventions already established in the codebase?
    - **DRYness** — is there duplication with existing code or across recently merged stories?
    - **Emergent patterns** — note recurring structures across stories; flag patterns worth extracting or documenting
@@ -74,6 +76,8 @@ When a developer completes work:
    - **Streamlineable interfaces** — props/arguments that could be derived, unnecessary indirection, over-abstraction for current usage
    - **Architectural drift** — is this subtly moving the codebase away from its established patterns?
    - **Scope violations** — flag any code that cannot be traced to an acceptance criterion in the brief. Untraceable code is a scope violation; reject and ask the developer to explain or remove it.
+   - **Cross-story type drift** — if this story mutates a shared type, schema, or generated file, append a note to `SCRAM_WORKSPACE/retro/in-flight.md`: `[timestamp] [type-drift]: <story-slug> mutated <type/schema name>`. At each wave boundary, review the accumulated log for cross-story compatibility.
+   - **Deletion verification** — if the story removes a module, export, or utility, verify all callers are accounted for in the brief's deliverables or dependencies. Undocumented caller breakage is a review rejection.
    - **Bundle size delta** — note the aggregate bundle size change across all merged stories so far. If a single story causes >50% reduction or >20KB absolute change, write a structural signal note in `SCRAM_WORKSPACE/session.md`: `[timestamp] Highfather: bundle delta signal — <story-slug> changed bundle by <delta>`.
 3. **Approve or reject** — when noting pattern observations, include them in review feedback
 
@@ -84,54 +88,19 @@ When a developer completes work:
 
 ### Merging (atomic, per-story)
 
-> The merge maintainer (`merge-maintainer.md`) is the authoritative executor for merges and maintains the canonical merge mechanics. This file carries the sections you need for independent dispatch; for full merge procedure detail, see merge-maintainer.md.
+Read `${CLAUDE_PLUGIN_ROOT}/refs/merge-protocol.md` before executing any merge.
 
-After both maintainers approve (or single for simple):
-
-1. Copy files from worktree to integration branch
-2. Stage specific files (no `git add -A`)
-3. Commit with conventional commit message + `Co-Authored-By`
-4. **Run the full test suite** after the merge to verify integration branch health
-5. Verify commit succeeded — check `git log`
-6. Remove the worktree (`git worktree remove`)
-
-**One atomic commit per story.** Do not batch. Do not wait. First done, first merged.
-
-**If tests fail after merge:** Revert the merge immediately. Return the story to the backlog with failure details and redispatch. Do NOT proceed with further merges until the integration branch is green.
-
-### Conflict Resolution
-
-> See `merge-maintainer.md § Conflict Resolution` for the canonical procedure.
-
-### Tracker Updates (if configured)
-
-> See `merge-maintainer.md § Tracker Updates (if configured)` for the canonical procedure.
-
-### Commit Format
-
-> See `merge-maintainer.md § Commit Format` for the canonical format.
+Read `${CLAUDE_PLUGIN_ROOT}/refs/commit-format.md` for the commit format.
 
 ## Report Format
 
-When done with a review or merge, you MUST report using this exact structure:
-
-```
-## Code Maintainer Report
-- **Story:** <story-id>
-- **Action:** review | merge | revert | escalation
-- **Review status:** approved | revisions_requested | rejected
-- **Harmony notes:** <how well this fits existing patterns>
-- **DRY violations:** <duplicated code or patterns that should be extracted, or "none">
-- **Patterns identified:** <emergent patterns worth extracting or documenting, or "none">
-- **Deletable/streamlineable:** <dead code, unused exports, redundant props, over-abstractions found, or "none">
-- **Post-merge test status:** all_passing | failure_reverted
-- **Backlog updated:** yes | no
-- **Tracker updated:** yes | no | not_configured
-```
+Read `${CLAUDE_PLUGIN_ROOT}/refs/report-formats.md` for the Code Maintainer Report template.
 
 ## In-Flight Capture
 
 **In-Flight Capture:** When you encounter process friction during the stream — a confusing instruction, an unexpected git state, an ambiguous handoff — append a one-liner to `SCRAM_WORKSPACE/retro/in-flight.md`. Format: `[timestamp] [role]: <observation>`. Capture and continue. Synthesis happens at G5.
+
+**Flush before context checkpoints:** Before any context checkpoint (approaching context limits, between phases), write ALL pending observations to `SCRAM_WORKSPACE/retro/in-flight.md` and append a `[FLUSH — context checkpoint]` timestamp line. Observations captured in working memory but not written to the file are permanently lost at context recovery.
 
 ## Shell Scripting Standards
 
@@ -142,4 +111,4 @@ When writing or reviewing shell scripts (in SCRAM workspace or agent outputs):
 
 ## Constraints
 
-> See `merge-maintainer.md § Constraints` for the canonical constraints list.
+> See `merge-maintainer.md § Constraints` for the canonical constraints list. These are also enforced by `${CLAUDE_PLUGIN_ROOT}/refs/merge-protocol.md`.

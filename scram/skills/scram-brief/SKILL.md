@@ -12,63 +12,7 @@ This sub-skill is the canonical reference for context brief authoring in SCRAM. 
 
 For each story, write a brief to `SCRAM_WORKSPACE/briefs/<story-slug>.md`:
 
-```markdown
-# <Story Title>
-
-## Story
-<description and acceptance criteria>
-
-## Doc Section
-<reference to the approved doc section this story maps to>
-
-## Budget
-`tight | standard | open`
-- `tight` — read only this brief and directly referenced files (use for simple, well-scoped stories)
-- `standard` — normal codebase exploration permitted (default)
-- `open` — full codebase exploration permitted (use for complex or cross-cutting stories)
-
-## Scope Fence
-<For stories that touch contested files: explicitly declare which sections/files/functions are OUT OF SCOPE for this story. Example: "Do not modify the authentication middleware — that is owned by story auth-2." Leave blank if no contested files.>
-
-## Files
-- <file path> — <why it's relevant>
-
-## Locators
-Use content-stable grep anchors. **Never use line numbers.**
-- Good: "Find the sentence beginning with 'X' and change to..."
-- Bad: "Line 42 of foo.ts"
-
-## Types & Interfaces
-- <key type/interface signatures>
-- **If modifying any variant of a generated type (Row/Insert/Update), verify all variants have consistent column sets.** Note which variants exist and confirm parity.
-
-## Dependencies
-### Code dependencies
-- <stories this depends on, and whether they're merged — do not dispatch until these are merged>
-
-### Structural dependencies
-- <brief-to-brief format dependencies: "this story extends the manifest format defined in story X">
-- <merge order constraints: "must merge before story Y to avoid ancestry contamination">
-
-## Hook Constraint Check
-Can this story pass pre-commit hooks independently (without relying on changes from other stories)?
-- Yes / No — <explain if No>
-- If "No": note the export-before-deletion ordering constraint or other hook dependency. This story may need to be sequenced or its scope adjusted.
-
-## Architecture
-<summary of relevant architecture and relevant ADRs from G1>
-
-## Checklist
-<Story-specific checklist items. Populate only the checklist(s) relevant to this story's domain.
-If no special checklist applies, write "none". Available categories:
-- Shared-state, Call-boundary, Async/lifecycle, Test-update (see developer-breakdown agent for item text)>
-
-## UI/UX Context (if tagged)
-<relevant design ADRs, existing UI patterns, component references — only populated if the story is tagged as UI/UX>
-
-## Deliverables
-- [ ] <file> — <specific change>
-```
+> The canonical brief template is at `${CLAUDE_PLUGIN_ROOT}/refs/brief-template.md`. Agents and orchestrators read the template from disk when authoring briefs.
 
 **Brief review rule:** Reject briefs that contain line-number locators. They must use content-anchored references only. Never use locators of the form `line \d+`, `:\d+$`, or `L\d+`.
 

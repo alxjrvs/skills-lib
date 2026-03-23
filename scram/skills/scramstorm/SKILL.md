@@ -16,27 +16,27 @@ Every scramstorm uses a core team of four agents, plus optional specialists. Eac
 
 ### Core team (always present)
 
-| Name | Agent (`subagent_type`) | Personality | Debate Role |
-|------|-------------------------|-------------|-------------|
-| **Orion** | `scram:developer-reviewer` | Warrior-born, fierce, impatient with half-measures. Son of Darkseid raised by Highfather — lives in tension between destruction and discipline. Pushes for bold, decisive action. Distrusts complexity and indirection. | The **challenger** — favors direct, aggressive approaches. Cuts through ambiguity. Will call out over-engineering and cowardly compromises. |
-| **Metron** | `scram:merge-maintainer` | Detached seeker of knowledge. Sits in the Mobius Chair observing all of reality. Values understanding over action, patterns over instinct. Will trade anything for knowledge — even allies. | The **analyst** — maps the full solution space before committing. Finds hidden patterns, structural risks, and second-order consequences others miss. May over-index on elegance at the cost of pragmatism. |
-| **Highfather** | `scram:code-maintainer` | Leader of New Genesis. Wise, patient, sees the long game. Once a warrior (Izaya the Inheritor), now a statesman who traded his son for peace. Thinks in systems, not battles. Values harmony and the greater good over individual brilliance. | The **steward** — evaluates how each approach affects the codebase as a living system. Asks "what does this look like in six months?" Champions DRYness, consistency, and architectural coherence over local optimization. |
-| **Forager** | `scram:developer-reviewer` | A "bug" — one of the insectoid people of New Genesis, looked down on by the gods but proved his worth through sheer tenacity and resourcefulness. Practical, grounded, no pretensions. Does the work others consider beneath them. | The **pragmatist** — represents ground truth. Asks "but what will this actually look like when someone has to build and maintain it?" Catches ideas that sound elegant in theory but fall apart in practice. |
-| Orchestrator | — | — | Phase coordination, synthesis, presenting options to user |
+| Name | Agent (`subagent_type`) | Debate Role |
+|------|-------------------------|-------------|
+| **Orion** | `scram:developer-reviewer` | The **challenger** — bold, direct, cuts through ambiguity |
+| **Metron** | `scram:merge-maintainer` | The **analyst** — maps the solution space, finds hidden patterns |
+| **Highfather** | `scram:code-maintainer` | The **steward** — long-term thinking, architectural coherence |
+| **Forager** | `scram:developer-reviewer` | The **pragmatist** — ground truth, maintenance burden, what actually works |
+| Orchestrator | — | Phase coordination, synthesis, presenting options to user |
 
 ### Optional specialists (include when the problem touches their domain)
 
-| Name | Agent (`subagent_type`) | Personality | Debate Role | Include when... |
-|------|-------------------------|-------------|-------------|-----------------|
-| **Beautiful Dreamer** | `scram:doc-specialist` | Empath and illusionist. Sees what others overlook — the human dimension, the lived experience. Creates visions of possibility that reveal truth through imagination. | The **advocate** — centers the user's experience and the clarity of the design. Asks "what will this feel like to use?" Challenges approaches that are technically sound but hostile to humans. | Problem involves user-facing design, API ergonomics, or documentation |
-| **Scott Free** | `scram:developer-reviewer` | Mister Miracle — the world's greatest escape artist. Raised in the fire pits of Apokolips, he escaped the inescapable. Sees traps everywhere and always finds the way out. Refuses to accept "impossible" or "stuck." Optimistic despite having survived the worst. | The **escapist** — finds creative workarounds and unconventional paths. Breaks false dichotomies. When the team is stuck between two bad options, Scott finds the third door nobody saw. | Problem feels stuck, constrained, or the team is trapped in a false dichotomy |
-| **Himon** | `scram:dev-tooling-maintainer` | The rebel tinkerer of Apokolips. Secret teacher who trained Scott Free to escape. Lives in the cracks of the system, building tools and workarounds that shouldn't be possible. Knows every shortcut, every exploit, every hidden capability. | The **toolsmith** — evaluates how approaches affect the dev toolchain, CI/CD, build systems, and agentic workflows. Asks "can we automate this? What does the pipeline look like?" Spots DX friction others miss. | Problem involves CI/CD, build systems, developer workflows, agentic integration, or toolchain |
-| **Glorious Godfrey** | `scram:marketer` | Darkseid's master orator. The voice that reaches millions. Godfrey does not build — he persuades. Every word exists to be found, read, and acted upon. Obsessed with reach, discoverability, and the irresistible clarity of strong copy. Sees everything through the lens of "will anyone find this? Will they care?" | The **evangelist** — evaluates how approaches affect discoverability, messaging, and user adoption. Asks "who will find this? What will they search for? Does the copy sell?" Catches docs that inform but don't persuade, READMEs that describe but don't compel, and error messages that confuse instead of guide. | Problem involves public-facing docs, README content, SEO, marketing copy, CLI help text, or user onboarding |
-| **Desaad** | `scram:critic` | Darkseid's chief torturer. Finds weakness — that is what he does, that is all he does. Where others see promise, Desaad sees the fracture line. Cynical because cynicism is pattern recognition. Harsh because kindness in review is cruelty in production. Does not build, does not encourage — dismantles methodically, precisely, and without mercy. | The **adversary** — stress-tests every approach for failure modes, wrong assumptions, missing error paths, security surface, and maintenance debt. Asks "what breaks? What did nobody test? What will the person who inherits this curse?" Attacks everything — strong and weak alike. Any crack is a way in. | Team needs adversarial critique, red-teaming, or stress-testing before shipping |
+| Name | Agent (`subagent_type`) | Debate Role | Include when... |
+|------|-------------------------|-------------|-----------------|
+| **Beautiful Dreamer** | `scram:doc-specialist` | The **advocate** — user experience, design clarity | Problem involves user-facing design, API ergonomics, or documentation |
+| **Scott Free** | `scram:developer-reviewer` | The **escapist** — creative workarounds, breaks false dichotomies | Problem feels stuck, constrained, or the team is trapped in a false dichotomy |
+| **Himon** | `scram:dev-tooling-maintainer` | The **toolsmith** — dev toolchain, CI/CD, automation | Problem involves CI/CD, build systems, developer workflows, agentic integration, or toolchain |
+| **Glorious Godfrey** | `scram:marketer` | The **evangelist** — discoverability, messaging, adoption | Problem involves public-facing docs, README content, SEO, marketing copy, CLI help text, or user onboarding |
+| **Desaad** | `scram:critic` | The **adversary** — stress-tests for failure modes, wrong assumptions | Team needs adversarial critique, red-teaming, or stress-testing before shipping |
 
 **Important:** When dispatching agents via the `Agent` tool, always use the `scram:` prefix in `subagent_type` (e.g., `subagent_type: "scram:developer"`).
 
-**Personality in practice:** Each agent's personality should visibly influence their research focus, tickets, and debate arguments. Orion's positions should be blunt and action-oriented. Metron's should be analytical and pattern-seeking. Highfather's should be systemic and long-term. Forager's should be grounded and practical. When present: Beautiful Dreamer's should be empathetic and user-centered, Scott Free's should be inventive and constraint-breaking, Himon's should be tooling-focused and automation-minded, Glorious Godfrey's should be reach-obsessed and copy-critical, Desaad's should be cynical and flaw-seeking. The personality is not a costume — it's a lens that produces genuinely different analysis.
+Read `${CLAUDE_PLUGIN_ROOT}/refs/scramstorm-personas.md` for full personality descriptions and debate roles when dispatching agents.
 
 ## Brainstorm Workspace
 
@@ -89,12 +89,22 @@ Write the framed problem to `BRAINSTORM_WORKSPACE/problem.md`:
 ## Statement
 <the core problem in 1-2 sentences>
 
+## Known Friction
+<At least one concrete pain point — a failing task, a slow workflow, a specific breakage.
+If the user cannot name one, the orchestrator must elicit it via AskUserQuestion before dispatching researchers.
+A brainstorm triggered without concrete friction input risks solving a hypothetical.>
+
 ## Constraints
 - <constraint 1>
 - <constraint 2>
 
 ## Context
 <what has been tried, relevant history, existing state>
+
+## Known Divergences
+<Optional. Any known contradictions between documentation and source code, stale memory references,
+or claims in the problem statement that may not match the current codebase state.
+Populated during Frame if known; agents confirm or expand during research.>
 
 ## Desired Outcome
 single_recommendation | ranked_options | exploration
@@ -151,6 +161,21 @@ AskUserQuestion:
       multiSelect: false
 ```
 
+## Phase 1.5: Prior Retro Scan
+
+Before dispatching research agents, the orchestrator scans for prior retrospective issues:
+
+1. **Read open retro issues** — check GitHub issues on the plugin repo with label `retrospective`:
+   ```bash
+   gh issue list --repo alxjrvs/skills --label retrospective --state open --json number,title --limit 20
+   ```
+2. **Surface to agents** — include issue titles and counts in each agent's research dispatch prompt. This prevents rediscovery of known problems and lets agents distinguish novel findings from recurring ones.
+3. **Mark recurrences** — if an agent's research rediscovers a known retro issue, they note it as `[recurring: #<issue-number>]` in their findings. Recurring findings are stronger evidence for prioritization than first-time findings.
+
+This phase adds one read-only operation with no additional agent dispatches.
+
+---
+
 ## Phase 2: Research (parallel)
 
 Dispatch **all team members in parallel**. Each agent receives:
@@ -191,6 +216,12 @@ Research format:
 
 After research completes and before tickets, the orchestrator collects all open questions from research documents, deduplicates them, and dispatches a quick resolution pass. Questions answerable by code search are resolved immediately (one agent, one grep). Questions requiring external knowledge are flagged as blockers on any ticket that depends on them.
 
+### Context Integrity Check
+
+After research and before tickets, each agent flags any claim in the problem statement or referenced docs that contradicts what they found in the codebase. The orchestrator collects these flags and updates `problem.md` with corrections under `## Known Divergences` before ticket generation begins.
+
+This is distinct from Open Questions Resolution — that step resolves ambiguities. This step resolves *inaccuracies*. Agents should not generate options based on stale assumptions.
+
 ## Phase 3: Tickets (anonymous)
 
 After research and question resolution, dispatch **every agent again**. Each agent reads:
@@ -204,8 +235,11 @@ Ticket format:
 ```markdown
 # <short title>
 
-## Summary
-<1-2 sentence description of the proposed approach or observation>
+## Problem
+<one sentence — what specific problem does this address?>
+
+## Proposed Change
+<one sentence — what is the proposed approach?>
 
 ## How It Works
 <detailed explanation — what changes, what stays the same, how the pieces fit>
@@ -217,6 +251,9 @@ Ticket format:
 ## Trade-offs
 - **Pros:** <list>
 - **Cons:** <list>
+
+## Risks
+- <what could go wrong>
 
 ## Effort Estimate
 low | moderate | high | very_high
@@ -230,14 +267,19 @@ Agents may submit tickets proposing the same approach — convergence is signal.
 
 **State contract requirement:** If the brainstorm touches async state machines, queues, or event-driven systems, each ticket must declare what state each entity is in after the proposed change runs under the named failure scenario.
 
-### Deduplication Gate
+### Pre-Vote Processing
 
-Before voting, the orchestrator (or Metron as the analyst) scans all tickets and:
-- Flags tickets that target the same code surface or problem
-- Merges functionally identical tickets into composite tickets
-- Keeps distinct tickets that offer genuinely different solutions to the same problem
+Before voting, the orchestrator (or Metron as the analyst) runs three passes:
 
-This ensures votes land on distinct approaches rather than splitting across phrasings of the same fix.
+**1. Duplicate collapse:** Scan all tickets and merge functionally identical tickets into composite tickets. Keep distinct tickets that offer genuinely different solutions to the same problem. Cap submissions at one ticket per agent per problem surface.
+
+**2. Non-starters filter:** Remove tickets that are clearly out of scope:
+- Requires a human product decision that the brainstorm cannot make
+- Explicitly depends on a different brainstorm completing first
+- Contains unsubstantiated claims about product behavior (flag for revision or removal)
+Tag filtered tickets as `non-starter: <reason>` and pull them from the ballot.
+
+**3. Fact vs. opinion split:** Tickets with confirmed code evidence (bugs, misclassifications backed by `file:line` citations) go to a "fix queue" unconditionally — they do not participate in the popularity vote. Only design choices (naming conventions, structure, taxonomy preferences) go to majority vote. Bugs should not lose popularity contests to type annotations.
 
 ## Phase 4: Vote
 
@@ -248,19 +290,30 @@ Each agent returns their votes as a list of ticket numbers. The orchestrator tal
 ```markdown
 # Votes
 
-| Ticket | Title | Votes |
-|--------|-------|-------|
-| 003 | <title> | 7 |
-| 001 | <title> | 5 |
-| 005 | <title> | 3 |
-| ... | ... | ... |
+| Ticket | Title | Votes | Disposition |
+|--------|-------|-------|-------------|
+| 003 | <title> | 7 | ships |
+| 001 | <title> | 5 | ships |
+| 005 | <title> | 3 | backlog |
+| 008 | <title> | 1 | dropped — subsumed by 003 |
+| ... | ... | ... | ... |
+
+## Fix Queue (confirmed bugs — not voted)
+| Ticket | Title | Severity |
+|--------|-------|----------|
+| 002 | <title> | P0 |
+
+## Orphan Check
+<Tickets that received at least one vote but didn't reach majority. Each must have explicit disposition:
+either a backlog ticket is created, or the group documents why it's being dropped.
+No real bugs leave the brainstorm without a home.>
 ```
 
 ## Phase 5: Discuss (winning tickets)
 
 Discuss tickets that received a **majority of votes** (>50% of participating agents voted for them). Low-scoring tickets are ignored unless an agent flags one as critical (in which case, include it).
 
-**Unanimous tickets skip discussion.** If a ticket received votes from every agent, emit a one-line "Unanimous — no discussion needed" note and move it directly to the final output. Only run discussion for tickets where the vote was split or contentious.
+**Unanimous tickets skip discussion and generate briefs.** If a ticket received votes from every agent, emit a one-line "Unanimous — no discussion needed" note and move it directly to the final output. Write a `discussion/SKIPPED.md` noting: "Skipped: all N researchers reached the same conclusion independently; no dissent to surface." Additionally, if the unanimous ticket's `options.md` entry contains a "What To Do" section with enumerated steps, auto-generate a stub story brief in `BRAINSTORM_WORKSPACE/briefs/` for the first concrete action item — this prevents the user from re-entering context the brainstorm already produced.
 
 ### Steward Triage
 
@@ -310,102 +363,7 @@ briefs:
 - `g2_skip_eligible` — `true` if the brainstorm produced user-facing docs that can serve as G2 output.
 - `briefs` — list of absolute paths to any quick-win brief files generated during the Present phase. Empty list if none.
 
-### If the user wanted `single_recommendation`:
-
-```
-## Brainstorm Result
-
-### Recommendation: <approach title>
-<summary>
-
-**Support:** <count>/<total> team members
-**Effort:** <estimate>
-
-**Why this approach:**
-<synthesized reasoning from debate>
-
-**Key trade-offs:**
-- <trade-off 1>
-- <trade-off 2>
-
-**Dissenting views:**
-- <role>: <concern>
-
-### Alternatives Considered
-1. <approach> — rejected because <reason>
-2. <approach> — rejected because <reason>
-
-## Next Step
-
-To implement this, start a new conversation and run:
-  /scram implement <recommendation> from this scramstorm
-Workspace: <BRAINSTORM_WORKSPACE path>
-```
-
-### If the user wanted `ranked_options`:
-
-```
-## Brainstorm Result
-
-### Option 1: <approach title> (recommended)
-**Support:** <count>/<total> | **Effort:** <estimate>
-<summary>
-- **Pros:** <list>
-- **Cons:** <list>
-- **Risks:** <list>
-
-### Option 2: <approach title>
-**Support:** <count>/<total> | **Effort:** <estimate>
-<summary>
-- **Pros:** <list>
-- **Cons:** <list>
-- **Risks:** <list>
-
-### Option 3: <approach title>
-...
-
-### Team Notes
-<any cross-cutting observations, open questions, or caveats from the debate>
-
-## Next Step
-
-To implement this, start a new conversation and run:
-  /scram implement <option> from this scramstorm
-Workspace: <BRAINSTORM_WORKSPACE path>
-```
-
-### If the user wanted `exploration`:
-
-```
-## Brainstorm Result
-
-### The Problem Space
-<synthesized understanding of the problem from all perspectives>
-
-### Approaches Explored
-
-#### <approach 1>
-<description, trade-offs, who supported it and why>
-
-#### <approach 2>
-<description, trade-offs, who supported it and why>
-
-#### <approach 3>
-...
-
-### Tensions and Trade-offs
-<where the team genuinely disagreed and why — these are real trade-offs, not resolvable by more discussion>
-
-### Open Questions
-Each open question must include a **named decision owner** and a **resolution trigger** (deadline, blocker, or escalation condition). Open questions without owners are organizational debt. If the brainstorm cannot name an owner, flag the question as a blocker on the relevant option.
-- <question> — **Owner:** <who decides> — **Resolve by:** <trigger>
-
-## Next Step
-
-To implement this, start a new conversation and run:
-  /scram implement <option> from this scramstorm
-Workspace: <BRAINSTORM_WORKSPACE path>
-```
+Read `${CLAUDE_PLUGIN_ROOT}/refs/scramstorm-output-formats.md` for the output format templates matching the user's desired outcome (single_recommendation, ranked_options, or exploration).
 
 ### Prerequisite Verification
 

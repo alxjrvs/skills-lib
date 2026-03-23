@@ -88,4 +88,11 @@ fi
 echo "ISOLATION_CHECK: pass"
 echo "  worktree: $LATEST_WORKTREE"
 echo "  branch: $WORKTREE_BRANCH"
+
+# Mark story as in_progress in backlog (sprint only)
+if [ -n "${SCRAM_WORKSPACE:-}" ] && [ -f "$SCRAM_WORKSPACE/backlog.md" ] && [ -n "${STORY_SLUG:-}" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  "$SCRIPT_DIR/scram-backlog.sh" transition "$SCRAM_WORKSPACE" "$STORY_SLUG" in_progress 2>/dev/null || true
+fi
+
 exit 0

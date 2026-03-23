@@ -39,4 +39,12 @@ mkdir -p "$EVENTS_DIR" 2>/dev/null || true
 GATE=$(grep '^current_gate:' "$SESSION_FILE" 2>/dev/null | sed 's/^current_gate:[[:space:]]*//' | tr -d '"' | tr -d "'" | head -1)
 echo "{\"ts\":\"$TIMESTAMP\",\"type\":\"checkpoint\",\"gate\":\"${GATE:-unknown}\"}" >> "$EVENTS_DIR/stream.log"
 
+# Flush in-flight observations
+if [ -n "${SCRAM_WORKSPACE:-}" ]; then
+  IN_FLIGHT="$SCRAM_WORKSPACE/retro/in-flight.md"
+  if [ -f "$IN_FLIGHT" ]; then
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [FLUSH — context checkpoint]" >> "$IN_FLIGHT"
+  fi
+fi
+
 exit 0

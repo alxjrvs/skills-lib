@@ -16,4 +16,13 @@ if [ -f "$HALT_FILE" ]; then
   exit 1
 fi
 
+# State gate check — only during sprint (SCRAM_WORKSPACE with .scram-state)
+if [ -f "$SCRAM_WORKSPACE/.scram-state" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  if ! "$SCRIPT_DIR/scram-state.sh" require "$SCRAM_WORKSPACE" streams 2>/dev/null; then
+    echo "SCRAM state is not in 'streams' phase — agent dispatch blocked" >&2
+    exit 1
+  fi
+fi
+
 exit 0

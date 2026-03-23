@@ -72,29 +72,24 @@ When doc specialists complete the feature documentation:
 
 ### Code Review (Merge Stream — continuous)
 
-When a developer completes work:
+Read `${CLAUDE_PLUGIN_ROOT}/refs/review-checklist.md` for the full review checklist.
 
-0. **Run pre-merge check** — execute `${CLAUDE_PLUGIN_ROOT}/scripts/pre-merge-check.sh <branch> <sha> <integration-branch>` and verify it passes before proceeding with review
-1. **Read the diff** — review every changed line in the worktree against the integration branch
-2. **Verify against docs and ADRs** — does the implementation satisfy every acceptance criterion exactly?
-3. **Check for**:
-   - Tests covering the documented behavior (derived from docs, not implementation)
-   - Red-Green-Refactor discipline: tests exist before implementation, tests pass, code is refactored
-   - **Scope discipline** — reject changes beyond the story. No bonus refactors, no "while I'm here" additions. Flag any code that cannot be traced to an acceptance criterion as a scope violation.
-   - **Commit count** — verify exactly one commit on the story branch relative to the integration branch: `git rev-list --count --no-merges <integration-branch>..<story-branch>`. Require the developer to squash before approval if count > 1.
-   - **Diff isolation** — verify the diff's changed files exactly match the brief's `## Deliverables`. Changes outside the declared files require explanation or rejection.
-   - **Ancestry check** — verify the story branch was created from the integration branch tip, not from `main` or a sibling story branch: `git merge-base --is-ancestor <integration-tip> <story-branch>`.
-   - **Generated type parity** — when any variant of a generated type (Row/Insert/Update) is modified, verify all variants have consistent column sets.
-   - **Edge cases** — are error paths, boundary conditions, and null/empty cases handled?
-   - **Naming and formatting** — consistent, descriptive, following CLAUDE.md conventions exactly
-   - **Test quality** — do tests assert the right things? Are they testing behavior or implementation details?
-4. **Run tests** — apply changes to integration branch, verify tests pass
-5. **Approve or reject** — provide specific, line-level feedback if rejecting
+When a developer completes work, apply every item in the review checklist. Your review lens adds:
+- **Story strictness** — does the implementation satisfy every acceptance criterion? Nothing extra, nothing missing.
+- **TDD discipline** — was Red-Green-Refactor actually followed?
+- **Test quality** — do tests assert the right things? Are they testing behavior or implementation details?
 
 ### Approval Tiers
 
 - **Simple stories**: single maintainer approval sufficient (either merge or code maintainer)
 - **Moderate and complex stories**: both maintainers must independently approve
+
+### Approval Outcomes
+
+Three formal review outcomes:
+- **approved** — implementation matches spec
+- **revisions_requested** — implementation needs changes
+- **approved-with-deviation** — implementation intentionally deviates from spec in a technically sound way. For behavioral deviations on moderate/complex stories, notify the code maintainer via `SendMessage` before merging. Record the deviation in `session.md` under `## Deviations`.
 
 ### Approval Records
 
@@ -109,63 +104,19 @@ The merge is **gated** on both approval records existing for moderate/complex st
 
 ### Merging (atomic, per-story)
 
-After approval records are written:
+Read `${CLAUDE_PLUGIN_ROOT}/refs/merge-protocol.md` before executing any merge.
 
-1. Copy files from worktree to integration branch
-2. Stage specific files (no `git add -A`)
-3. Commit with conventional commit message + `Co-Authored-By`
-4. **Run the full test suite** after the merge to verify integration branch health
-5. Verify commit succeeded — check `git log`
-6. Remove the worktree (`git worktree remove`)
-
-**One atomic commit per story.** Do not batch. Do not wait. First done, first merged.
-
-**If tests fail after merge:** Revert the merge immediately. Return the story to the backlog with failure details and redispatch. Do NOT proceed with further merges until the integration branch is green.
-
-### Conflict Resolution
-
-- **Trivial conflicts** (import ordering, adjacent edits): resolve directly in the integration branch
-- **Substantive conflicts** (competing logic changes): pause the conflicting story. Merge all non-conflicting work first. Redispatch the story against the updated integration branch with a fresh context brief.
-
-### Tracker Updates (if configured)
-
-If the user provided an external tracker during G0:
-
-- **After each merge:** Update the corresponding issue — add a comment with the commit hash, mark as "Done" / "Merged" / equivalent status
-- **On revert:** Update the issue back to "In Progress" with details on what broke
-- **If tracker API fails:** Log what you would have updated and continue. Report missed updates to the user at the end.
-
-Use available tools (`gh` CLI, MCP tools) for tracker operations. If tools are unavailable, log the update and report missed updates to the user at the end.
-
-### Commit Format
-
-```
-<type>(<scope>): <description>
-
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
-```
+Read `${CLAUDE_PLUGIN_ROOT}/refs/commit-format.md` for the commit format.
 
 ## Report Format
 
-When done with a review or merge, you MUST report using this exact structure:
-
-```
-## Merge Maintainer Report
-- **Story:** <story-id>
-- **Action:** review | merge | revert | escalation
-- **Review status:** approved | revisions_requested | rejected
-- **Acceptance criteria met:** yes | partial | no — <details if not fully met>
-- **TDD discipline:** followed | violated — <details if violated>
-- **Scope violations:** none | <list of out-of-scope changes>
-- **Code quality issues:** none | <specific line-level issues>
-- **Post-merge test status:** all_passing | failure_reverted
-- **Backlog updated:** yes | no
-- **Tracker updated:** yes | no | not_configured
-```
+Read `${CLAUDE_PLUGIN_ROOT}/refs/report-formats.md` for the Merge Maintainer Report template.
 
 ## In-Flight Capture
 
 **In-Flight Capture:** When you encounter process friction during the stream — a confusing instruction, an unexpected git state, an ambiguous handoff, an isolation failure — append a one-liner to `SCRAM_WORKSPACE/retro/in-flight.md`. Format: `[timestamp] [role]: <observation>`. Example: `[14:23] Metron: story-auth-middleware dev committed to integration branch before story branch was confirmed`. Capture and continue. Synthesis happens at G5.
+
+**Flush before context checkpoints:** Before any context checkpoint (approaching context limits, between phases), write ALL pending observations to `SCRAM_WORKSPACE/retro/in-flight.md` and append a `[FLUSH — context checkpoint]` timestamp line. Observations captured in working memory but not written to the file are permanently lost at context recovery.
 
 ## Constraints
 
