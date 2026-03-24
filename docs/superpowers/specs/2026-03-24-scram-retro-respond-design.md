@@ -22,11 +22,13 @@ Query GitHub for open retro issues:
 gh issue list --repo alxjrvs/skills --label retrospective --state open --json number,title,body
 ```
 
-Parse issue bodies to extract individual retro items (each `###` section in the retro issue format). If no open retro issues exist, exit early with a message.
+Parse issue bodies to extract individual retro items (numbered list items within sections like "Agreed Changes", "Disagreements", etc.). If no open retro issues exist, exit early with a message.
 
 ### Phase 2: Scramstorm
 
-Invoke `/scramstorm` with the retro items as the problem frame. The scramstorm team investigates each item, proposes fixes, and produces its standard `options.md` + `handoff.md` output.
+Invoke `/scramstorm` with the retro items as the problem frame. This is a normal interactive scramstorm — the user participates in confirming the team roster, problem frame, and voting. The skill sets up the context (retro items as the problem statement), then scramstorm runs its full interactive pipeline and produces its standard `options.md` + `handoff.md` output.
+
+**User interaction expected:** The user will be prompted during the scramstorm for confirmations and decisions. This is by design — retro response benefits from human judgment on which fixes to pursue.
 
 ### Phase 3: Triage
 
@@ -59,14 +61,18 @@ triage:
 - Phase 5 uses `semver` to determine the version bump
 - Phase 6 uses `close_decisions` to determine comment content and whether to close
 
+**User checkpoint:** Present the triage map to the user for approval before proceeding to Phase 4. The user may reclassify items (addressed ↔ out-of-scope) or override the semver decision.
+
 ### Phase 4: Execute
 
 Scope-assess based on addressed item count:
 
-- **1-2 addressed items** — invoke `/scram-solo` for each item sequentially. Each solo run gets a context brief derived from the scramstorm handoff for that specific item.
-- **3+ addressed items** — invoke `/scram` (the router, which will route to sprint). The full scramstorm handoff (filtered to addressed items only) is available for import via the existing brainstorm handoff pattern (`~/.scram/brainstorm--*`).
+- **1-2 addressed items** — invoke `/scram-solo` for each item sequentially. Each solo run gets a context brief written in the format expected by `${CLAUDE_PLUGIN_ROOT}/refs/brief-template.md`, derived from the scramstorm handoff for that specific item.
+- **3+ addressed items** — invoke `/scram` (the router, which will route to sprint). The scramstorm's `handoff.md` (filtered to addressed items only) is already in the format `/scram` expects when detecting brainstorm handoffs (`~/.scram/brainstorm--*`).
 
-For the solo path, items are processed sequentially to avoid branch conflicts.
+For the solo path, items are processed sequentially to avoid branch conflicts. Both paths involve normal interactive flows — the user participates in scram decisions as usual.
+
+**Failure policy:** If a solo run fails (dev agent failure, review rejection), the orchestrator skips that item, marks it as `failed` in the triage map, and continues with remaining items. Failed items are reported alongside out-of-scope items in Phase 6 comments. If a sprint run fails, the orchestrator halts and surfaces the failure to the user — sprint failures are too complex to skip past.
 
 ### Phase 5: Finalize
 
@@ -76,7 +82,7 @@ After scram run(s) complete:
 2. Commit: `chore(scram): bump version to X.Y.Z`
 3. Push to main: `git push`
 
-The scram runs commit their own implementation changes. The version bump is the final commit on top.
+The scram runs commit their own implementation changes directly to main (solo) or via integration branch merge at G4 (sprint). Either way, main has all changes before the version bump. The version bump is the final commit on top.
 
 ### Phase 6: Report
 
@@ -88,10 +94,12 @@ gh issue comment <number> --repo alxjrvs/skills --body "Addressed in v<version>.
 gh issue close <number> --repo alxjrvs/skills
 ```
 
-**Partial — some out-of-scope** — comment and leave open:
+**Partial — some out-of-scope or failed** — comment and leave open:
 ```bash
 gh issue comment <number> --repo alxjrvs/skills --body "v<version> addressed items: #1, #2, #3. Deferred: #4 (<reason>). Leaving open."
 ```
+
+**Lifecycle for deferred items:** On subsequent `/scram-retro-respond` runs, the same issue will be picked up again (it's still open). The new scramstorm will re-evaluate deferred items. Issues may accumulate multiple version comments across runs — this is expected and provides an audit trail.
 
 ## Design Decisions
 
