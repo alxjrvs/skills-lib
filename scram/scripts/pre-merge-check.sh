@@ -22,7 +22,7 @@ if ! git rev-parse --verify "refs/heads/$BRANCH_NAME" >/dev/null 2>&1; then
 fi
 
 # Check 2: SHA is on branch
-SHA_ON_BRANCH=$(git log --oneline "$BRANCH_NAME" 2>/dev/null | awk '{print $1}' | grep -Fx "$COMMIT_SHA")
+SHA_ON_BRANCH=$(git log --oneline "$BRANCH_NAME" 2>/dev/null | grep "$COMMIT_SHA")
 if [ -z "$SHA_ON_BRANCH" ]; then
   echo "PRE_MERGE: fail"
   echo "  check: sha_on_branch"

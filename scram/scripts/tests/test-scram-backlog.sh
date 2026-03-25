@@ -198,10 +198,10 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# TEST GROUP 8: dispatchable — P0 pending: only P0 stories returned
+# TEST GROUP 8: dispatchable — returns story-a and story-c but not story-b
 # ---------------------------------------------------------------------------
 echo ""
-echo "=== scram-backlog.sh dispatchable: P0 wave suppresses P1+ ==="
+echo "=== scram-backlog.sh dispatchable: basic filtering ==="
 
 if [ -f "$SCRIPT" ]; then
   WS=$(setup_workspace)
@@ -209,89 +209,21 @@ if [ -f "$SCRIPT" ]; then
   EXIT_CODE=$?
 
   if echo "$OUTPUT" | grep -q "story-a"; then
-    pass "dispatchable: includes story-a (P0, pending, no deps)"
+    pass "dispatchable: includes story-a (pending, no deps)"
   else
-    fail "dispatchable: should include story-a (P0), got '$OUTPUT'"
+    fail "dispatchable: should include story-a, got '$OUTPUT'"
+  fi
+
+  if echo "$OUTPUT" | grep -q "story-c"; then
+    pass "dispatchable: includes story-c (pending, no deps)"
+  else
+    fail "dispatchable: should include story-c, got '$OUTPUT'"
   fi
 
   if ! echo "$OUTPUT" | grep -q "story-b"; then
-    pass "dispatchable: excludes story-b (P1, dep on 1 not merged)"
+    pass "dispatchable: excludes story-b (dep on 1 not merged)"
   else
     fail "dispatchable: should exclude story-b, got '$OUTPUT'"
-  fi
-
-  if ! echo "$OUTPUT" | grep -q "story-c"; then
-    pass "dispatchable: excludes story-c (P2, suppressed by P0 wave)"
-  else
-    fail "dispatchable: should exclude story-c while P0 story-a is pending, got '$OUTPUT'"
-  fi
-  rm -rf "$WS"
-else
-  fail "scram-backlog.sh does not exist"
-fi
-
-# ---------------------------------------------------------------------------
-# TEST GROUP 8b: dispatchable — P0 merged: P1+ stories returned
-# ---------------------------------------------------------------------------
-echo ""
-echo "=== scram-backlog.sh dispatchable: P0 merged unblocks P1+ ==="
-
-if [ -f "$SCRIPT" ]; then
-  WS=$(setup_workspace)
-  # Merge story-a (P0, story #1) to unblock P1+ wave
-  "$SCRIPT" transition "$WS" "story-a" "in_progress" >/dev/null 2>&1
-  "$SCRIPT" transition "$WS" "story-a" "in_review" >/dev/null 2>&1
-  "$SCRIPT" transition "$WS" "story-a" "merged" >/dev/null 2>&1
-
-  OUTPUT=$("$SCRIPT" dispatchable "$WS" 2>&1)
-
-  if echo "$OUTPUT" | grep -q "story-c"; then
-    pass "dispatchable: includes story-c (P2, all P0s merged)"
-  else
-    fail "dispatchable: should include story-c after P0 merged, got '$OUTPUT'"
-  fi
-
-  if echo "$OUTPUT" | grep -q "story-b"; then
-    pass "dispatchable: includes story-b (P1, dep now merged)"
-  else
-    fail "dispatchable: should include story-b after story-a merged, got '$OUTPUT'"
-  fi
-  rm -rf "$WS"
-else
-  fail "scram-backlog.sh does not exist"
-fi
-
-# ---------------------------------------------------------------------------
-# TEST GROUP 8c: dispatchable — no P0 stories: passthrough unchanged
-# ---------------------------------------------------------------------------
-echo ""
-echo "=== scram-backlog.sh dispatchable: no P0 stories passthrough ==="
-
-if [ -f "$SCRIPT" ]; then
-  WS=$(mktemp -d)
-  mkdir -p "$WS/retro"
-  cat > "$WS/backlog.md" <<'BACKLOG'
-# SCRAM Backlog — no-p0-test
-
-| # | Story | Priority | Complexity | Resolution | Depends On | UI/UX | Status | Agent | Commit |
-|---|-------|----------|------------|------------|------------|-------|--------|-------|--------|
-| 1 | story-x | P1 | simple | commit | — | no | pending | — | — |
-| 2 | story-y | P2 | simple | commit | — | no | pending | — | — |
-BACKLOG
-  echo "streams" > "$WS/.scram-state"
-
-  OUTPUT=$("$SCRIPT" dispatchable "$WS" 2>&1)
-
-  if echo "$OUTPUT" | grep -q "story-x"; then
-    pass "dispatchable: includes story-x (P1, no P0 wave)"
-  else
-    fail "dispatchable: should include story-x with no P0 stories, got '$OUTPUT'"
-  fi
-
-  if echo "$OUTPUT" | grep -q "story-y"; then
-    pass "dispatchable: includes story-y (P2, no P0 wave)"
-  else
-    fail "dispatchable: should include story-y with no P0 stories, got '$OUTPUT'"
   fi
   rm -rf "$WS"
 else

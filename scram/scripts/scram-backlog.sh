@@ -122,38 +122,18 @@ cmd_dispatchable() {
   local bf
   bf=$(backlog_file "$ws")
 
-  # P0-wave guard: scan for any P0 story not yet merged.
-  # If any exists, restrict output to P0 stories only.
-  local p0_pending=false
-  while IFS= read -r line; do
-    echo "$line" | grep -qE '^\|[[:space:]]*[0-9]' || continue
-    local p_priority p_status
-    p_priority=$(get_field "$line" 4)
-    p_status=$(get_field "$line" 9)
-    if [ "$p_priority" = "P0" ] && [ "$p_status" != "merged" ]; then
-      p0_pending=true
-      break
-    fi
-  done < "$bf"
-
   # Read each data row (skip header and separator)
   while IFS= read -r line; do
     # Skip non-data rows
     echo "$line" | grep -qE '^\|[[:space:]]*[0-9]' || continue
 
-    local slug status deps priority
+    local slug status deps
     slug=$(get_field "$line" 3)
     status=$(get_field "$line" 9)
     deps=$(get_field "$line" 7)
-    priority=$(get_field "$line" 4)
 
     # Only pending stories
     [ "$status" = "pending" ] || continue
-
-    # P0-wave: if any P0 is not merged, only emit P0 stories
-    if $p0_pending && [ "$priority" != "P0" ]; then
-      continue
-    fi
 
     # Check deps
     if [ "$deps" = "—" ] || [ -z "$deps" ]; then

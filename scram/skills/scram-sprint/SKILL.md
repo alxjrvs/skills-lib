@@ -367,7 +367,7 @@ Use `scram-backlog.sh transition` to update story status.
 Do not embed brief contents, doc sections, or file contents inline in the dispatch prompt. Agents read their own context from disk.
 
 **Dispatch rules:**
-- **P0 stories run first as a separate wave** — the quality gate is all P0 stories in `merged` status, enforced by `scram-backlog.sh dispatchable` (which suppresses P1+ output until all P0s are merged)
+- **P0 stories run first as a separate wave** with a quality gate before P1+ begins
 - Max **5 concurrent dev agents**
 - Each agent works **one story at a time**, completing all three TDD phases
 - **Do not dispatch a story whose `Depends On` column has unmerged stories** — `scram-backlog.sh dispatchable` enforces this

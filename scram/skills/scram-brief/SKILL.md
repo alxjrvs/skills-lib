@@ -53,7 +53,7 @@ If a designer is on the team, flag any story that touches user-facing elements (
 | P2 — Normal | Independent work, no blockers |
 | P3 — Low | Nice-to-have, polish, edge cases |
 
-**P0 stories run first as a separate wave** — the quality gate is all P0 stories in `merged` status, enforced by `scram-backlog.sh dispatchable` (which suppresses P1+ output until all P0s are merged). This gates complex work on a proven baseline.
+**P0 stories run first as a separate wave** with a quality gate before P1+ begins. This gates complex work on a proven baseline.
 
 ## Backlog File Format
 
