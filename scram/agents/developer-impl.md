@@ -41,13 +41,13 @@ When assigned a story (including escalated stories that failed on a previous att
 1. **Check out from the integration branch** — your worktree may start on `main` or another branch. You MUST switch to the integration branch before doing anything else:
    ```bash
    git checkout <integration-branch>
-   git checkout -b <integration-branch>/<story-slug>
+   git checkout -b story/<feature-name>/<story-slug>
    ```
    The integration branch name is provided in your dispatch prompt. **NEVER work directly on `main`.**
    **NEVER work from a rejected branch** — if you receive a redispatch, always branch fresh from the current integration branch tip, not from the prior story's branch.
 2. **Isolation Contract** — before making ANY file modifications, verify all four:
    - `pwd` is within your assigned worktree path (not the main repo)
-   - `git rev-parse --abbrev-ref HEAD` matches your story branch (`<integration-branch>/<story-slug>`)
+   - `git rev-parse --abbrev-ref HEAD` matches your story branch (`story/<feature-name>/<story-slug>`)
    - `git status` shows no untracked files from other stories
    - You are NOT on the integration branch itself — you must be on a story branch created FROM it
    If ANY check fails, **STOP and report to the orchestrator**. Do not proceed. Do not commit on the integration branch directly.

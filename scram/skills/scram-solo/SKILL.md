@@ -94,7 +94,7 @@ Dispatch one `scram:developer-impl` with `isolation: "worktree"`.
 Solo bypasses `worktree-init.sh`. The orchestrator creates the worktree and branch directly:
 
 ```bash
-git worktree add .claude/worktrees/<story-slug> -b scram/solo/<story-slug>
+git worktree add .claude/worktrees/<story-slug> -b story/solo/<story-slug>
 ```
 
 Pass to the agent:

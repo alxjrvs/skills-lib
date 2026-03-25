@@ -48,7 +48,7 @@ if [ ! -d "$WORKTREES_DIR" ]; then
 fi
 
 # Find the most recently created worktree directory
-LATEST_WORKTREE=$(ls -td "$WORKTREES_DIR"/agent-* 2>/dev/null | head -1)
+LATEST_WORKTREE=$(ls -td "$WORKTREES_DIR"/* 2>/dev/null | head -1)
 
 if [ -z "$LATEST_WORKTREE" ]; then
   # No worktrees found — nothing to check
@@ -82,6 +82,13 @@ if [ "$WORKTREE_BRANCH" = "$INTEGRATION_BRANCH" ]; then
 
   # Write HALT file to signal orchestrator
   echo "Isolation failure in $LATEST_WORKTREE — worktree is on integration branch '$INTEGRATION_BRANCH' directly at $(date)" > "$SCRAM_WORKSPACE/HALT"
+  exit 1
+fi
+
+# Check: story branches must use story/ namespace
+if [[ "$WORKTREE_BRANCH" != story/* ]]; then
+  echo "ISOLATION FAILURE: branch '$WORKTREE_BRANCH' does not use story/ namespace" >&2
+  echo "ISOLATION FAILURE: branch '$WORKTREE_BRANCH' does not use story/ namespace" >> "$SCRAM_WORKSPACE/HALT"
   exit 1
 fi
 
